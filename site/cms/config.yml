@@ -1,0 +1,77 @@
+# =============================================================================
+# Sveltia CMS — konfigurasi (format serasi Decap/Netlify CMS)
+# Buka di: https://<laman-klien>/cms/
+# Panduan penuh: docs/03-GITHUB-PAGES-DAN-SVELTIA.md
+# =============================================================================
+
+backend:
+  name: github
+  repo: __GITHUB_REPO__        # format: pemilik/nama-repo  (cth: abc-klien/portal-abc)
+  branch: main
+  # Log masuk mudah: butang "Sign in with token" (Personal Access Token) — tiada
+  # server tambahan diperlukan. Untuk log masuk OAuth GitHub biasa, anda perlu
+  # OAuth proxy (sveltia-cms-auth); kemudian buang # di bawah dan isi URL-nya:
+  # base_url: https://nama-worker.nama-akaun.workers.dev
+
+# Gambar yang dimuat naik disimpan di sini (relatif dari akar repo), dan laluan
+# yang disimpan dalam content/site.json ialah laluan relatif yang sama.
+media_folder: assets/uploads
+public_folder: assets/uploads
+
+collections:
+  - name: tetapan
+    label: Laman Web
+    files:
+      - name: site
+        label: Kandungan & Tetapan Laman
+        file: content/site.json
+        format: json
+        fields:
+
+          - label: "Mod Penyelenggaraan"
+            name: maintenance
+            widget: boolean
+            default: false
+            hint: "HIDUP = tutup seluruh sistem sementara (butang 'Masuk Sistem' dikunci, borang tidak diterima). Biasanya MATI."
+
+          - label: "Status Borang (HIDUP = dibuka kepada orang ramai)"
+            name: category_status
+            widget: object
+            collapsed: false
+            fields:
+              - { label: "Jemputan Rasmi",    name: jemputan,     widget: boolean, default: true }
+              - { label: "Mohon Bantuan",     name: permohonan,   widget: boolean, default: true }
+              - { label: "Aduan Rakyat",      name: aduan,        widget: boolean, default: true }
+              - { label: "Temujanji",         name: temujanji,    widget: boolean, default: true }
+              - { label: "Idea / Cadangan",   name: maklum_balas, widget: boolean, default: true }
+              - { label: "Sukarelawan",       name: sukarelawan,  widget: boolean, default: true }
+
+          - label: "Maklumat Pejabat"
+            name: info
+            widget: object
+            fields:
+              - { label: "Waktu Operasi",                 name: hours,    widget: string }
+              - { label: "Nama Lokasi Pejabat",           name: location, widget: string }
+              - { label: "Pautan Google Maps",            name: map_link, widget: string }
+
+          - label: "Galeri Utama (slide)"
+            name: slides
+            widget: list
+            summary: "{{fields.image}}"
+            hint: "Gambar landskap (cadangan 1200x500). Susunan dari atas ke bawah = susunan paparan."
+            field: { label: Gambar, name: image, widget: image }
+
+          - label: "Pengumuman (ticker bergerak)"
+            name: memos
+            widget: list
+            field: { label: Pengumuman, name: text, widget: string }
+
+          - label: "Info Kerajaan & Bantuan"
+            name: gov_info
+            widget: list
+            summary: "{{fields.title}}"
+            required: false
+            fields:
+              - { label: "Tajuk Program",               name: title, widget: string }
+              - { label: "Gambar / Poster",             name: image, widget: image, required: false }
+              - { label: "Penerangan / Pautan Permohonan", name: desc, widget: text }

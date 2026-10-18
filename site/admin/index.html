@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Admin</title>
+<meta name="robots" content="noindex">
+<!-- Konfigurasi klien (edit ../config.js SAHAJA) + pembantu jenama -->
+<script src="../config.js"></script>
+<script src="../assets/brand.js"></script>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        ink:    '#0F172A',
+        navy:   '#12275B',
+        brand:  '#1A4A9A',
+        brand2: '#2563EB',
+        mist:   '#F1F5F9'
+      },
+      fontFamily: { sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'] }
+    }
+  }
+}
+</script>
+
+<style>
+  body { font-family:'Plus Jakarta Sans', system-ui, sans-serif; background:#F1F5F9; }
+  .spinner { border:3px solid #e2e8f0; border-top:3px solid #1A4A9A; border-radius:50%; width:38px; height:38px; animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .fade-in { animation:fade .25s ease-out; }
+  @keyframes fade { from { opacity:0; transform:translateY(4px);} to { opacity:1; transform:none;} }
+
+  .side-link { display:flex; align-items:center; gap:.75rem; padding:.625rem .875rem; border-radius:.625rem;
+               font-size:.875rem; font-weight:500; color:#CBD5E1; transition:all .15s; }
+  .side-link:hover { background:rgba(255,255,255,.08); color:#fff; }
+  .side-link.active { background:#fff; color:#12275B; font-weight:700; box-shadow:0 4px 12px rgba(0,0,0,.15); }
+  .side-link i { width:1.15rem; text-align:center; }
+
+  .pill { padding:.25rem .625rem; border-radius:9999px; font-size:.6875rem; font-weight:700; letter-spacing:.02em; white-space:nowrap; }
+  .pill-semakan { background:#DBEAFE; color:#1D4ED8; }
+  .pill-proses  { background:#FEF3C7; color:#B45309; }
+  .pill-selesai { background:#D1FAE5; color:#047857; }
+
+  ::-webkit-scrollbar { width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb { background:#CBD5E1; border-radius:4px; }
+  ::-webkit-scrollbar-thumb:hover { background:#94A3B8; }
+  ::-webkit-scrollbar-track { background:transparent; }
+
+  .toast { transform:translateX(120%); transition:transform .3s cubic-bezier(.16,1,.3,1); }
+  .toast.show { transform:translateX(0); }
+
+  .a4 { width:210mm; min-height:297mm; padding:16mm; margin:0 auto; background:#fff; box-sizing:border-box;
+        display:flex; flex-direction:column; box-shadow:0 10px 30px rgba(0,0,0,.12); }
+  table.data th { position:sticky; top:0; z-index:5; }
+</style>
+</head>
+
+<body class="text-ink">
+
+<!-- ══════════════════════════════════ TOAST ══════════════════════════════════ -->
+<div id="toasts" class="fixed bottom-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none"></div>
+
+<!-- ═══════════════════════════ SKRIN 1: SETUP URL ════════════════════════════ -->
+<div id="screen-setup" class="fixed inset-0 z-[9000] hidden items-center justify-center p-4 bg-gradient-to-br from-slate-100 via-white to-blue-50">
+  <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden fade-in">
+    <div class="h-1.5 bg-gradient-to-r from-brand to-brand2"></div>
+    <div class="p-8">
+      <div class="flex items-center gap-4 mb-6">
+        <img src="../assets/logo.svg" data-brand-logo alt="Logo" class="h-14">
+        <div>
+          <h1 class="text-lg font-extrabold text-navy leading-tight">Sambungan Pangkalan Data</h1>
+          <p class="text-xs text-slate-500">Dashboard Admin <span data-brand="name"></span></p>
+        </div>
+      </div>
+
+      <p class="text-sm text-slate-600 mb-4 leading-relaxed">
+        Masukkan URL Web App Apps Script (berakhir dengan <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs">/exec</code>).
+        Dashboard ini <strong>hanya papar data sebenar</strong> — tiada data contoh langsung.
+      </p>
+
+      <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">URL Apps Script (Macro)</label>
+      <input id="setup-url" type="url" placeholder="https://script.google.com/macros/s/.../exec"
+             class="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none transition mb-4">
+
+      <div id="setup-msg" class="hidden mb-4 text-xs rounded-xl px-4 py-3 border"></div>
+
+      <button onclick="App.testAndSaveUrl()" id="setup-btn"
+              class="w-full bg-brand hover:bg-navy text-white font-bold py-3 rounded-xl transition shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 text-sm">
+        <i class="fa-solid fa-plug-circle-check"></i> Uji &amp; Simpan Sambungan
+      </button>
+
+      <p class="text-[11px] text-slate-400 mt-4 text-center">
+        URL disimpan dalam pelayar ini sahaja. Tekan <em>Tetapan</em> dalam dashboard untuk tukar bila-bila masa.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ SKRIN 2: LOG MASUK ════════════════════════════ -->
+<div id="screen-login" class="fixed inset-0 z-[8000] hidden items-center justify-center p-4 bg-gradient-to-br from-slate-100 via-white to-blue-50">
+  <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 overflow-hidden fade-in">
+    <div class="h-1.5 bg-gradient-to-r from-brand to-brand2"></div>
+    <div class="p-8">
+      <div class="text-center mb-7">
+        <img src="../assets/logo.svg" data-brand-logo alt="Logo" class="h-16 mx-auto mb-3">
+        <h1 class="text-lg font-extrabold text-navy">Log Masuk Admin</h1>
+        <p class="text-xs text-slate-500 mt-1"><span data-brand="name"></span> · <span data-brand="orgShort"></span></p>
+      </div>
+
+      <form onsubmit="event.preventDefault(); App.login();">
+        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Emel</label>
+        <div class="relative mb-4">
+          <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <input id="login-email" type="email" autocomplete="username" placeholder="emel admin"
+                 class="w-full pl-11 pr-4 py-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none transition">
+        </div>
+
+        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Kata Laluan</label>
+        <div class="relative mb-6">
+          <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <input id="login-pass" type="password" autocomplete="current-password" placeholder="••••••••"
+                 class="w-full pl-11 pr-4 py-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none transition">
+        </div>
+
+        <button type="submit" id="login-btn"
+                class="w-full bg-brand hover:bg-navy text-white font-bold py-3 rounded-xl transition shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 text-sm">
+          <span>LOG MASUK</span><i class="fa-solid fa-arrow-right"></i>
+        </button>
+
+        <div id="login-msg" class="hidden mt-4 text-xs rounded-xl px-4 py-3 border bg-red-50 border-red-200 text-red-700"></div>
+      </form>
+
+      <button onclick="App.openForgot()" class="w-full text-center text-xs font-semibold text-brand hover:text-navy mt-5 transition">
+        Lupa kata laluan?
+      </button>
+
+      <button id="btn-change-url" onclick="App.openSetup()" class="w-full text-center text-[11px] text-slate-400 hover:text-brand mt-4 transition">
+        <i class="fa-solid fa-gear"></i> Tukar URL Apps Script
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════ SKRIN 2b: LUPA KATA LALUAN ══════════════════════════ -->
+<div id="screen-forgot" class="fixed inset-0 z-[8500] hidden items-center justify-center p-4 bg-gradient-to-br from-slate-100 via-white to-blue-50">
+  <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 overflow-hidden fade-in">
+    <div class="h-1.5 bg-gradient-to-r from-amber-400 to-brand"></div>
+    <div class="p-8">
+      <div class="text-center mb-6">
+        <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-500 grid place-items-center mx-auto mb-3">
+          <i class="fa-solid fa-key text-xl"></i>
+        </div>
+        <h1 class="text-lg font-extrabold text-navy">Set Semula Kata Laluan</h1>
+        <p class="text-xs text-slate-500 mt-1">Kod pengesahan dihantar ke emel admin</p>
+      </div>
+
+      <!-- Langkah 1: minta kod -->
+      <div id="forgot-step1">
+        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Emel Admin</label>
+        <div class="relative mb-5">
+          <i class="fa-solid fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <input id="forgot-email" type="email" placeholder="emel admin berdaftar"
+                 class="w-full pl-11 pr-4 py-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none transition">
+        </div>
+        <button onclick="App.requestCode()" id="forgot-btn1"
+                class="w-full bg-brand hover:bg-navy text-white font-bold py-3 rounded-xl transition shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 text-sm">
+          <i class="fa-solid fa-paper-plane"></i> Hantar Kod ke Emel
+        </button>
+      </div>
+
+      <!-- Langkah 2: masukkan kod + kata laluan baharu -->
+      <div id="forgot-step2" class="hidden">
+        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Kod 6-Digit</label>
+        <input id="forgot-code" inputmode="numeric" maxlength="6" placeholder="000000"
+               class="w-full px-4 py-3 border border-slate-300 rounded-xl text-center text-2xl font-mono tracking-[0.4em] focus:ring-2 focus:ring-brand focus:border-brand outline-none transition mb-4">
+
+        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Kata Laluan Baharu</label>
+        <input id="forgot-pw1" type="password" placeholder="minimum 10 aksara"
+               class="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none transition mb-3">
+
+        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Sahkan Kata Laluan</label>
+        <input id="forgot-pw2" type="password" placeholder="ulang kata laluan baharu"
+               class="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none transition mb-5">
+
+        <button onclick="App.submitReset()" id="forgot-btn2"
+                class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2 text-sm">
+          <i class="fa-solid fa-check"></i> Tetapkan Kata Laluan
+        </button>
+      </div>
+
+      <div id="forgot-msg" class="hidden mt-4 text-xs rounded-xl px-4 py-3 border"></div>
+
+      <button onclick="App.showLogin()" class="w-full text-center text-[11px] text-slate-400 hover:text-brand mt-6 transition">
+        <i class="fa-solid fa-arrow-left"></i> Kembali ke log masuk
+      </button>
+
+      <p class="text-[10px] text-slate-400 mt-4 text-center leading-relaxed">
+        Tak dapat emel? Buka Google Sheet → menu <strong>⚙️ <span data-brand="name"></span></strong> → <em>Tetapkan / Tukar Kata Laluan Admin</em>.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ SKRIN 3: LOADING ═══════════════════════════════ -->
+<div id="screen-loading" class="fixed inset-0 z-[7000] hidden flex-col items-center justify-center bg-white/95">
+  <div class="spinner mb-5"></div>
+  <p class="text-sm font-bold text-navy">Memuatkan data sebenar…</p>
+  <p id="loading-note" class="text-[11px] text-slate-400 mt-1.5">Menghubungi Apps Script</p>
+</div>
+
+<!-- ═══════════════════════════ APP (SELEPAS LOGIN) ═══════════════════════════ -->
+<div id="app" class="hidden h-screen overflow-hidden flex">
+
+  <!-- Sidebar backdrop (mobile) -->
+  <div id="backdrop" onclick="App.toggleSidebar()" class="fixed inset-0 bg-black/50 z-30 hidden lg:hidden"></div>
+
+  <!-- ─────────────── SIDEBAR ─────────────── -->
+  <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-40 w-[270px] shrink-0 bg-navy flex flex-col
+                             -translate-x-full lg:translate-x-0 transition-transform duration-300">
+    <div class="px-6 py-6 border-b border-white/10 flex items-center gap-3">
+      <img src="../assets/logo.svg" data-brand-logo alt="Logo" class="h-11">
+      <div class="min-w-0">
+        <p class="text-white font-extrabold text-sm leading-tight" data-brand="name"></p>
+        <p class="text-slate-400 text-[10px] uppercase tracking-widest">Dashboard Admin</p>
+      </div>
+      <button onclick="App.toggleSidebar()" class="lg:hidden ml-auto text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto px-3 py-5 space-y-1">
+      <button onclick="App.go('dashboard')" data-nav="dashboard" class="side-link w-full active"><i class="fa-solid fa-chart-pie"></i> Dashboard</button>
+
+      <p class="px-4 pt-5 pb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">Pangkalan Data</p>
+      <button onclick="App.go('all')" data-nav="all" class="side-link w-full"><i class="fa-solid fa-layer-group"></i> Semua Rekod</button>
+
+      <p class="px-4 pt-5 pb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">Kategori</p>
+      <div id="nav-categories" class="space-y-1"></div>
+    </nav>
+
+    <div class="p-4 border-t border-white/10 space-y-2">
+      <button onclick="App.openSetup()" class="side-link w-full"><i class="fa-solid fa-gear"></i> Tetapan Sambungan</button>
+      <button onclick="App.logout()" class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500 hover:text-white transition text-xs font-bold uppercase tracking-wide">
+        <i class="fa-solid fa-power-off"></i> Log Keluar
+      </button>
+    </div>
+  </aside>
+
+  <!-- ─────────────── MAIN ─────────────── -->
+  <main class="flex-1 flex flex-col min-w-0">
+
+    <header class="bg-white border-b border-slate-200 px-4 md:px-7 py-4 flex items-center justify-between gap-4 shrink-0">
+      <div class="flex items-center gap-3 min-w-0">
+        <button onclick="App.toggleSidebar()" class="lg:hidden text-slate-500 hover:text-brand p-2 -ml-2"><i class="fa-solid fa-bars text-lg"></i></button>
+        <div class="min-w-0">
+          <h1 id="page-title" class="text-base md:text-lg font-extrabold text-navy truncate">Dashboard</h1>
+          <p id="page-sub" class="text-[11px] text-slate-500 truncate">Pemantauan &amp; pengurusan data terpusat</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <button onclick="App.refresh()" class="px-3 py-2 rounded-xl border border-slate-300 bg-white hover:border-brand hover:text-brand text-slate-700 text-xs font-semibold flex items-center gap-2 transition">
+          <i id="refresh-ico" class="fa-solid fa-rotate"></i><span class="hidden sm:inline">Muat Semula</span>
+        </button>
+        <button onclick="App.buildReport()" class="px-3 py-2 rounded-xl bg-brand hover:bg-navy text-white text-xs font-semibold flex items-center gap-2 transition shadow-sm">
+          <i class="fa-solid fa-file-pdf"></i><span class="hidden sm:inline">Laporan PDF</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Banner status sambungan (kekal, bukan toast) -->
+    <div id="conn-banner" class="hidden mx-4 md:mx-7 mt-4 rounded-xl border px-4 py-3 text-xs"></div>
+
+    <div class="flex-1 overflow-y-auto p-4 md:p-7">
+
+      <!-- ══════════ VIEW: DASHBOARD ══════════ -->
+      <section id="view-dashboard" class="space-y-5">
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap items-center gap-3">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2"><i class="fa-solid fa-filter"></i> Julat Tarikh</span>
+          <input type="date" id="dash-from" onchange="App.renderDashboard()" class="px-3 py-2 rounded-lg border border-slate-300 text-xs outline-none focus:ring-2 focus:ring-brand">
+          <span class="text-slate-400 text-xs">hingga</span>
+          <input type="date" id="dash-to" onchange="App.renderDashboard()" class="px-3 py-2 rounded-lg border border-slate-300 text-xs outline-none focus:ring-2 focus:ring-brand">
+          <button onclick="App.resetDashFilter()" class="text-[11px] font-semibold text-red-500 hover:text-red-700 px-3 py-2 rounded-lg border border-red-100 hover:bg-red-50 transition">Reset</button>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white rounded-2xl border border-slate-200 p-5">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Jumlah Rekod</p>
+            <div class="flex items-end justify-between">
+              <h3 id="stat-total" class="text-3xl font-extrabold text-ink">0</h3>
+              <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 grid place-items-center"><i class="fa-solid fa-database"></i></div>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-5">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Telah Selesai</p>
+            <div class="flex items-end justify-between">
+              <h3 id="stat-selesai" class="text-3xl font-extrabold text-emerald-600">0</h3>
+              <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 grid place-items-center"><i class="fa-solid fa-circle-check"></i></div>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-5">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Sedang Diproses</p>
+            <div class="flex items-end justify-between">
+              <h3 id="stat-proses" class="text-3xl font-extrabold text-amber-500">0</h3>
+              <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 grid place-items-center"><i class="fa-solid fa-clock"></i></div>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-5">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Dalam Semakan</p>
+            <div class="flex items-end justify-between">
+              <h3 id="stat-semakan" class="text-3xl font-extrabold text-brand">0</h3>
+              <div class="w-10 h-10 rounded-xl bg-blue-50 text-brand grid place-items-center"><i class="fa-solid fa-file-import"></i></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6">
+            <h3 class="text-xs font-bold uppercase tracking-widest text-slate-600 mb-5">Rekod Mengikut Kategori</h3>
+            <div class="h-72"><canvas id="chart-cat"></canvas></div>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-6">
+            <h3 class="text-xs font-bold uppercase tracking-widest text-slate-600 mb-5">Taburan Status</h3>
+            <div class="h-72"><canvas id="chart-status"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════ VIEW: TABLE ══════════ -->
+      <section id="view-table" class="hidden space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+          <div class="p-4 border-b border-slate-100 bg-slate-50/60 flex flex-col xl:flex-row gap-3 xl:items-center xl:justify-between">
+            <div class="relative w-full xl:w-72">
+              <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+              <input id="f-search" onkeyup="App.renderTable()" placeholder="Cari nama, rujukan, telefon…"
+                     class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm outline-none focus:ring-2 focus:ring-brand focus:border-brand">
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <select id="f-status" onchange="App.renderTable()" class="px-3 py-2.5 rounded-xl border border-slate-300 text-xs outline-none focus:ring-2 focus:ring-brand bg-white">
+                <option value="">Semua Status</option>
+                <option value="DALAM SEMAKAN">Dalam Semakan</option>
+                <option value="SEDANG DI PROSES">Sedang Di Proses</option>
+                <option value="TELAH SELESAI">Telah Selesai</option>
+              </select>
+              <input type="date" id="f-from" onchange="App.renderTable()" class="px-3 py-2.5 rounded-xl border border-slate-300 text-xs outline-none focus:ring-2 focus:ring-brand">
+              <input type="date" id="f-to" onchange="App.renderTable()" class="px-3 py-2.5 rounded-xl border border-slate-300 text-xs outline-none focus:ring-2 focus:ring-brand">
+              <button onclick="App.resetFilters()" class="text-[11px] font-semibold text-red-500 hover:text-red-700 px-2">Reset</button>
+
+              <div class="relative">
+                <button onclick="App.toggleColMenu(event)" class="px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold flex items-center gap-2 hover:border-brand hover:text-brand transition">
+                  <i class="fa-solid fa-table-columns"></i> Lajur
+                </button>
+                <div id="col-menu" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl border border-slate-200 shadow-xl z-50 p-2">
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-2 py-1.5 border-b border-slate-100 mb-1.5">Paparan Lajur</p>
+                  <div id="col-list" class="space-y-0.5 max-h-64 overflow-y-auto"></div>
+                </div>
+              </div>
+
+              <button onclick="App.exportExcel()" class="px-3 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-2 transition">
+                <i class="fa-solid fa-file-excel"></i> Excel
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto max-h-[62vh]">
+            <table class="w-full text-left border-collapse data">
+              <thead class="bg-slate-100 text-slate-600 text-[10px] uppercase font-bold tracking-wider">
+                <tr id="thead-row"></tr>
+              </thead>
+              <tbody id="tbody" class="text-sm divide-y divide-slate-100 bg-white"></tbody>
+            </table>
+          </div>
+
+          <div class="px-4 py-3 border-t border-slate-200 bg-slate-50/60 text-[11px] text-slate-500 font-medium">
+            <span id="table-count">0 rekod</span>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- ═══════════════════════ MODAL: EDIT / TINDAKAN ════════════════════════════ -->
+<div id="modal-edit" class="fixed inset-0 z-[9500] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+  <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 max-h-[92vh] overflow-y-auto fade-in">
+    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white rounded-t-2xl">
+      <h3 class="font-extrabold text-navy">Kemas Kini Tindakan</h3>
+      <button onclick="App.closeModal('modal-edit')" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark text-lg"></i></button>
+    </div>
+
+    <form class="p-6" onsubmit="event.preventDefault(); App.saveStatus();">
+      <input type="hidden" id="edit-ref">
+      <input type="hidden" id="edit-gid">
+
+      <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">No. Rujukan</label>
+      <input id="edit-ref-show" disabled class="w-full px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm text-slate-500 mb-4">
+
+      <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Pemohon</label>
+      <input id="edit-name-show" disabled class="w-full px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm text-slate-500 mb-4">
+
+      <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Status</label>
+      <select id="edit-status" onchange="App.onStatusChange()" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm outline-none focus:ring-2 focus:ring-brand mb-4 bg-white">
+        <option value="DALAM SEMAKAN">DALAM SEMAKAN</option>
+        <option value="SEDANG DI PROSES">SEDANG DI PROSES</option>
+        <option value="TELAH SELESAI">TELAH SELESAI</option>
+      </select>
+
+      <div id="report-box" class="hidden rounded-xl bg-slate-50 border border-slate-200 p-4 mb-5">
+        <p id="report-label" class="text-xs font-bold text-brand mb-3">Laporan Tindakan</p>
+
+        <div class="grid grid-cols-2 gap-2 mb-4">
+          <label class="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white border border-slate-200 cursor-pointer hover:border-brand transition text-xs">
+            <input type="radio" name="rmethod" value="upload" checked onclick="App.onMethodChange()" class="accent-brand"> Muat Naik Fail
+          </label>
+          <label class="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white border border-slate-200 cursor-pointer hover:border-brand transition text-xs">
+            <input type="radio" name="rmethod" value="build" onclick="App.onMethodChange()" class="accent-brand"> Bina Laporan
+          </label>
+        </div>
+
+        <div id="method-upload" class="space-y-2">
+          <label class="block text-[11px] font-semibold text-slate-600">Fail laporan (PDF / gambar)</label>
+          <input type="file" id="up-file" class="w-full text-xs border border-slate-300 rounded-xl p-2.5 bg-white">
+        </div>
+
+        <div id="method-build" class="hidden space-y-3">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Ringkasan tindakan</label>
+            <textarea id="build-summary" rows="3" placeholder="Terangkan tindakan yang telah diambil…"
+                      class="w-full text-sm border border-slate-300 rounded-xl p-3 outline-none focus:ring-2 focus:ring-brand"></textarea>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Gambar bukti (maks 3)</label>
+            <input type="file" id="build-images" multiple accept="image/*" class="w-full text-xs border border-slate-300 rounded-xl p-2.5 bg-white">
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button type="button" onclick="App.closeModal('modal-edit')" class="px-5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 text-sm font-semibold transition">Batal</button>
+        <button type="submit" id="save-btn" class="px-5 py-2.5 rounded-xl bg-brand hover:bg-navy text-white text-sm font-bold flex items-center gap-2 transition shadow-sm">
+          <i class="fa-solid fa-floppy-disk"></i> Simpan
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ════════════════════════ MODAL: PRATONTON PDF ═════════════════════════════ -->
+<div id="modal-pdf" class="fixed inset-0 z-[9500] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+  <div class="bg-slate-100 w-full max-w-5xl h-[94vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+    <div class="bg-white px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+      <h3 class="font-extrabold text-navy flex items-center gap-3"><i class="fa-solid fa-print text-brand"></i> Pratonton Laporan</h3>
+      <button onclick="App.closeModal('modal-pdf')" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark text-lg"></i></button>
+    </div>
+    <div class="flex-1 overflow-auto p-6 bg-slate-200"><div id="pdf-body"></div></div>
+    <div class="bg-white px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
+      <button onclick="App.closeModal('modal-pdf')" class="px-5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 text-sm font-semibold">Batal</button>
+      <button onclick="App.downloadPdf()" class="px-5 py-2.5 rounded-xl bg-brand hover:bg-navy text-white text-sm font-bold flex items-center gap-2 shadow-sm">
+        <i class="fa-solid fa-download"></i> Simpan PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<script type="module">
+/* ═══════════════════════════ KONFIGURASI ═══════════════════════════ */
+
+/* ┌───────────────────────────────────────────────────────────────────────┐
+   │  URL APPS SCRIPT & JENAMA dibaca dari ../config.js                    │
+   │  Kalau URL belum diisi di sana, skrin setup akan minta URL ini        │
+   │  semasa pertama kali dibuka (disimpan dalam pelayar ini sahaja).      │
+   └───────────────────────────────────────────────────────────────────────┘ */
+const APPS_SCRIPT_URL = (((window.KARADI_CONFIG || {}).APPS_SCRIPT_URL) || '').replace('URL_APPSCRIPT_ANDA_DI_SINI', '');
+const BRAND = window.KARADI_BRAND || {};
+const BRAND_LOGO = BRAND.logoUrl || '../assets/logo.svg';
+const fileSafe = (v) => String(v || 'Laporan').replace(/\W+/g, '_');
+
+// Kategori — kunci (key) MESTI sama dengan nama tab dalam Google Sheet & CATEGORY_LABELS
+// dalam Apps Script. Tab dicari ikut NAMA, jadi salin Sheet tak memecahkan apa-apa.
+// ('gid' dikekalkan sebagai nama medan supaya kod di bawah tak berubah; nilainya = kunci kategori.)
+const TABS = [
+  { id: 0, key: "Jemputan",     name: "Jemputan Rasmi",   gid: "Jemputan",     icon: "fa-envelope-open-text" },
+  { id: 1, key: "Permohonan",   name: "Mohon Bantuan",    gid: "Permohonan",   icon: "fa-hand-holding-heart" },
+  { id: 2, key: "Aduan",        name: "Aduan Rakyat",     gid: "Aduan",        icon: "fa-bullhorn" },
+  { id: 3, key: "Temujanji",    name: "Temujanji",        gid: "Temujanji",    icon: "fa-calendar-check" },
+  { id: 4, key: "Maklum Balas", name: "Idea / Cadangan",  gid: "Maklum Balas", icon: "fa-lightbulb" },
+  { id: 5, key: "Sukarelawan",  name: "Sukarelawan",      gid: "Sukarelawan",  icon: "fa-users" }
+];
+
+// Lajur jadual — No. KP / IC SENGAJA TIDAK dipaparkan (privasi & PDPA)
+const COLUMNS = [
+  { key: 'date',      label: 'Tarikh' },
+  { key: 'category',  label: 'Kategori' },
+  { key: 'ref',       label: 'No. Rujukan' },
+  { key: 'name',      label: 'Nama Pemohon' },
+  { key: 'address',   label: 'Alamat' },
+  { key: 'phone',     label: 'No. Telefon' },
+  { key: 'detail',    label: 'Perincian' },
+  { key: 'attach',    label: 'Lampiran' },
+  { key: 'status',    label: 'Status' },
+  { key: 'action',    label: 'Tindakan' },
+  { key: 'donedate',  label: 'Tarikh Selesai' },
+  { key: 'report',    label: 'Laporan' }
+];
+
+const LS_URL_KEY = 'karadi_appsscript_url';
+const SS_TOKEN_KEY = 'karadi_session_token';
+
+/* ═══════════════════════════ STORAN SELAMAT ═══════════════════════════ */
+
+const store = {
+  get(k)      { try { return localStorage.getItem(k); } catch (e) { return mem[k] ?? null; } },
+  set(k, v)   { try { localStorage.setItem(k, v); } catch (e) { mem[k] = v; } },
+  del(k)      { try { localStorage.removeItem(k); } catch (e) { delete mem[k]; } },
+  sGet(k)     { try { return sessionStorage.getItem(k); } catch (e) { return mem[k] ?? null; } },
+  sSet(k, v)  { try { sessionStorage.setItem(k, v); } catch (e) { mem[k] = v; } },
+  sDel(k)     { try { sessionStorage.removeItem(k); } catch (e) { delete mem[k]; } }
+};
+const mem = {};
+
+/* ═══════════════════════════ STATE ═══════════════════════════ */
+
+// No. KP sengaja TIDAK dipapar secara lalai (PDPA) — admin boleh hidupkan
+// sementara melalui menu "Lajur" bila memang perlu untuk pemprosesan.
+COLUMNS.splice(6, 0, { key: 'ic', label: 'No. KP', sensitive: true });
+
+const S = {
+  // URL hardcoded di atas ambil keutamaan; kalau kosong, guna yang disimpan
+  // dari skrin setup.
+  url: APPS_SCRIPT_URL || store.get(LS_URL_KEY) || '',
+  urlLocked: !!APPS_SCRIPT_URL,
+  token: store.sGet(SS_TOKEN_KEY) || '',
+  email: '',
+  byTab: {},          // { tabId: [rows] }
+  all: [],            // semua rekod
+  filtered: [],       // hasil tapisan semasa
+  view: 'dashboard',
+  cols: COLUMNS.reduce((a, c) => (a[c.key] = !c.sensitive, a), {}),
+  charts: { cat: null, status: null }
+};
+
+/* ═══════════════════════════ UTILITI ═══════════════════════════ */
+
+const esc = (v) => {
+  const d = document.createElement('div');
+  d.textContent = (v === null || v === undefined) ? '' : String(v);
+  return d.innerHTML;
+};
+
+const show = (id) => document.getElementById(id).classList.remove('hidden');
+const hide = (id) => document.getElementById(id).classList.add('hidden');
+const showFlex = (id) => { const el = document.getElementById(id); el.classList.remove('hidden'); el.classList.add('flex'); };
+const hideFlex = (id) => { const el = document.getElementById(id); el.classList.add('hidden'); el.classList.remove('flex'); };
+
+function toast(msg, type = 'success') {
+  const wrap = document.getElementById('toasts');
+  const el = document.createElement('div');
+  const map = { success: ['fa-circle-check', 'bg-emerald-600'], error: ['fa-circle-exclamation', 'bg-red-600'], info: ['fa-circle-info', 'bg-brand'] };
+  const [ico, bg] = map[type] || map.success;
+  el.className = `toast pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-xl shadow-xl text-white ${bg} max-w-sm`;
+  el.innerHTML = `<i class="fa-solid ${ico} mt-0.5"></i><span class="text-xs font-medium leading-relaxed">${esc(msg)}</span>`;
+  wrap.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 4500);
+}
+
+function banner(html, level = 'error') {
+  const el = document.getElementById('conn-banner');
+  const styles = {
+    error: 'bg-red-50 border-red-200 text-red-700',
+    warn:  'bg-amber-50 border-amber-200 text-amber-800',
+    ok:    'bg-emerald-50 border-emerald-200 text-emerald-700'
+  };
+  el.className = `mx-4 md:mx-7 mt-4 rounded-xl border px-4 py-3 text-xs ${styles[level]}`;
+  el.innerHTML = html;
+}
+const clearBanner = () => { const el = document.getElementById('conn-banner'); el.className = 'hidden'; el.innerHTML = ''; };
+
+const normStatus = (s) => {
+  const t = String(s || '').toLowerCase().trim();
+  if (t.includes('selesai') || t.includes('lulus')) return 'TELAH SELESAI';
+  if (t.includes('proses') || t.includes('tindakan')) return 'SEDANG DI PROSES';
+  return 'DALAM SEMAKAN';
+};
+
+function parseDate(v) {
+  if (!v) return null;
+  const s = String(v).trim().split(' ')[0];
+  const dmy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (dmy) return new Date(+dmy[3], +dmy[2] - 1, +dmy[1]);
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+const pick = (row, names) => {
+  for (const n of names) {
+    for (const k of Object.keys(row)) {
+      if (String(k).trim().toLowerCase() === n.toLowerCase()) {
+        const v = row[k];
+        if (v !== '' && v !== null && v !== undefined) return v;
+      }
+    }
+  }
+  return '';
+};
+
+/* ═══════════════════════════ PANGGILAN API ═══════════════════════════ */
+
+async function api(payload, { auth: needAuth = true } = {}) {
+  if (!S.url) throw new Error('URL Apps Script belum ditetapkan.');
+  const body = { ...payload };
+  if (needAuth) body.sessionToken = S.token;
+
+  let res, raw;
+  try {
+    res = await fetch(S.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body)
+    });
+    raw = await res.text();
+  } catch (netErr) {
+    throw new Error(`Sambungan gagal: ${netErr.message}. Semak URL Apps Script & sambungan internet.`);
+  }
+
+  console.log(`[Admin] ${payload.action} → HTTP ${res.status}`, raw.slice(0, 500));
+
+  let json;
+  try {
+    json = JSON.parse(raw);
+  } catch (e) {
+    throw new Error(`Respons bukan JSON (HTTP ${res.status}). Petikan: ${raw.slice(0, 180)}`);
+  }
+  if (json.status === 'error') throw new Error(json.message || 'Ralat tidak diketahui dari pelayan.');
+  return json;
+}
+
+const fileToB64 = (file) => new Promise((resolve, reject) => {
+  const r = new FileReader();
+  r.onload = () => resolve({ name: file.name, mimeType: file.type, data: r.result.split(',')[1] });
+  r.onerror = reject;
+  r.readAsDataURL(file);
+});
+
+/* ═══════════════════════════ APP ═══════════════════════════ */
+
+const App = {};
+window.App = App;
+
+/* ---------- Setup URL ---------- */
+
+App.openSetup = function () {
+  if (S.urlLocked) {
+    toast('URL Apps Script telah ditetapkan dalam config.js (APPS_SCRIPT_URL). Edit fail itu untuk menukarnya.', 'info');
+    return;
+  }
+  document.getElementById('setup-url').value = S.url || '';
+  document.getElementById('setup-msg').classList.add('hidden');
+  hide('app'); hideFlex('screen-login'); hideFlex('screen-loading'); hideFlex('screen-forgot');
+  showFlex('screen-setup');
+};
+
+App.testAndSaveUrl = async function () {
+  const input = document.getElementById('setup-url').value.trim();
+  const msg = document.getElementById('setup-msg');
+  const btn = document.getElementById('setup-btn');
+
+  const setMsg = (text, level) => {
+    const styles = { error: 'bg-red-50 border-red-200 text-red-700', ok: 'bg-emerald-50 border-emerald-200 text-emerald-700' };
+    msg.className = `mb-4 text-xs rounded-xl px-4 py-3 border ${styles[level]}`;
+    msg.innerHTML = text;
+  };
+
+  if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec/.test(input)) {
+    setMsg('URL tidak sah. Ia mesti bermula dengan <strong>https://script.google.com/macros/s/</strong> dan berakhir dengan <strong>/exec</strong>.', 'error');
+    return;
+  }
+
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menguji sambungan…';
+
+  const prevUrl = S.url;
+  S.url = input;
+  try {
+    const res = await api({ action: 'ping' }, { auth: false });
+    store.set(LS_URL_KEY, input);
+    let note = `Sambungan berjaya — ${esc(res.app || BRAND.name || '')} ${esc(res.version || '')}.`;
+    if (res.adminPasswordSet === false) {
+      note += ' <strong>Amaran:</strong> kata laluan admin belum ditetapkan — buka Google Sheet &gt; menu ⚙️ &gt; <em>Setup Pertama Kali</em> / <em>Tetapkan Kata Laluan Admin</em>.';
+    }
+    setMsg(note, 'ok');
+    setTimeout(() => { hideFlex('screen-setup'); App.showLogin(); }, 1200);
+  } catch (e) {
+    S.url = prevUrl;
+    setMsg(`Gagal: ${esc(e.message)}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+};
+
+/* ---------- Login ---------- */
+
+App.showLogin = function () {
+  hide('app'); hideFlex('screen-setup'); hideFlex('screen-loading'); hideFlex('screen-forgot');
+  showFlex('screen-login');
+  document.getElementById('login-msg').classList.add('hidden');
+  // Kalau URL dihardcode dalam kod, sembunyikan butang tukar URL
+  const btn = document.getElementById('btn-change-url');
+  if (btn) btn.classList.toggle('hidden', S.urlLocked);
+};
+
+/* ---------- Lupa kata laluan ---------- */
+
+function forgotMsg(text, level) {
+  const el = document.getElementById('forgot-msg');
+  const styles = {
+    error: 'bg-red-50 border-red-200 text-red-700',
+    ok:    'bg-emerald-50 border-emerald-200 text-emerald-700',
+    info:  'bg-blue-50 border-blue-200 text-blue-700'
+  };
+  el.className = `mt-4 text-xs rounded-xl px-4 py-3 border ${styles[level]}`;
+  el.innerHTML = text;
+}
+
+App.openForgot = function () {
+  hideFlex('screen-login');
+  showFlex('screen-forgot');
+  show('forgot-step1'); hide('forgot-step2');
+  document.getElementById('forgot-msg').classList.add('hidden');
+  ['forgot-email', 'forgot-code', 'forgot-pw1', 'forgot-pw2'].forEach(id => document.getElementById(id).value = '');
+};
+
+App.requestCode = async function () {
+  const email = document.getElementById('forgot-email').value.trim();
+  const btn = document.getElementById('forgot-btn1');
+  if (!email) return forgotMsg('Sila masukkan emel admin.', 'error');
+
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghantar…';
+
+  try {
+    const res = await api({ action: 'forgot_password', email }, { auth: false });
+    forgotMsg(res.message + (res.sentTo ? `<br><strong>${esc(res.sentTo)}</strong>` : ''), 'ok');
+    hide('forgot-step1'); show('forgot-step2');
+    document.getElementById('forgot-code').focus();
+  } catch (e) {
+    forgotMsg(esc(e.message), 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+};
+
+App.submitReset = async function () {
+  const code = document.getElementById('forgot-code').value.trim();
+  const pw1 = document.getElementById('forgot-pw1').value;
+  const pw2 = document.getElementById('forgot-pw2').value;
+  const btn = document.getElementById('forgot-btn2');
+
+  if (!code) return forgotMsg('Sila masukkan kod 6-digit dari emel.', 'error');
+  if (pw1.length < 10) return forgotMsg('Kata laluan baharu mesti sekurang-kurangnya 10 aksara.', 'error');
+  if (pw1 !== pw2) return forgotMsg('Kata laluan tidak sepadan.', 'error');
+
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menetapkan…';
+
+  try {
+    const res = await api({ action: 'reset_password', code, newPassword: pw1 }, { auth: false });
+    forgotMsg(esc(res.message), 'ok');
+    setTimeout(() => { App.showLogin(); toast('Kata laluan berjaya ditukar. Sila log masuk.', 'success'); }, 1600);
+  } catch (e) {
+    forgotMsg(esc(e.message), 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+};
+
+App.login = async function () {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const msg = document.getElementById('login-msg');
+  const btn = document.getElementById('login-btn');
+  msg.classList.add('hidden');
+
+  if (!email || !pass) {
+    msg.textContent = 'Sila isi emel dan kata laluan.';
+    msg.classList.remove('hidden');
+    return;
+  }
+
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengesahkan…';
+
+  try {
+    // Auth server-side di Apps Script (tiada panggilan luar diperlukan)
+    const res = await api({ action: 'admin_login', email, password: pass }, { auth: false });
+    S.token = res.sessionToken;
+    S.email = res.adminEmail || email;
+    store.sSet(SS_TOKEN_KEY, S.token);
+
+    hideFlex('screen-login');
+    document.getElementById('login-pass').value = '';
+    await App.boot();
+  } catch (e) {
+    msg.textContent = e.message;
+    msg.classList.remove('hidden');
+    document.getElementById('login-pass').value = '';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+};
+
+App.logout = async function () {
+  try { await api({ action: 'admin_logout' }); } catch (e) { /* abaikan */ }
+  S.token = ''; S.all = []; S.byTab = {}; S.filtered = [];
+  store.sDel(SS_TOKEN_KEY);
+  clearBanner();
+  hide('app');
+  App.showLogin();
+  toast('Anda telah log keluar.', 'info');
+};
+
+/* ---------- Boot & muat data ---------- */
+
+App.boot = async function () {
+  buildCategoryNav();
+  buildColumnPicker();
+  show('app');
+  document.getElementById('app').classList.add('flex');
+  await App.loadData();
+  App.go('dashboard');
+};
+
+App.loadData = async function (silent = false) {
+  if (!silent) showFlex('screen-loading');
+  clearBanner();
+
+  try {
+    document.getElementById('loading-note').textContent = 'Mengambil rekod dari Google Sheet…';
+    const res = await api({ action: 'get_admin_data' });
+
+    const sheetErrors = [];
+    S.byTab = {};
+    S.all = [];
+
+    TABS.forEach(tab => {
+      const rows = (res.tabs && res.tabs[tab.gid]) ? res.tabs[tab.gid] : [];
+      if (res.errors && res.errors[tab.gid]) sheetErrors.push({ tab: tab.name, msg: res.errors[tab.gid] });
+
+      const mapped = rows.map(r => ({
+        raw: r,
+        tabId: tab.id,
+        gid: tab.gid,
+        category: tab.name,
+        date: pick(r, ['Timestamp', 'Tarikh/Masa']),
+        ref: String(pick(r, ['No. Rujukan'])).trim(),
+        name: pick(r, ['Nama Penuh']),
+        phone: String(pick(r, ['No. Telefon'])).replace(/^'/, ''),
+        address: pick(r, ['Alamat']),
+        detail: pick(r, ['Perincian 1', 'Perincian 2']),
+        option: pick(r, ['Pilihan/Kategori']),
+        attach: pick(r, ['Lampiran']),
+        status: normStatus(pick(r, ['STATUS'])),
+        uid: String(pick(r, ['UID'])).trim(),
+        // IC: dari lajur "No. KP" dalam sheet (disimpan semasa borang dihantar)
+        ic: String(pick(r, ['No. KP', 'IC', 'No. IC'])).replace(/^'/, ''),
+        doneDate: pick(r, ['Tarikh Selesai', 'Tarikh Tindakan/Selesai']),
+        report: pick(r, ['Laporan Penyelesaian', 'Laporan Tindakan/Selesai'])
+      }));
+
+      S.byTab[tab.id] = mapped;
+      S.all.push(...mapped);
+    });
+
+    // Status sambungan
+    if (sheetErrors.length) {
+      banner(`<div class="flex items-start justify-between gap-4">
+                <div><p class="font-bold mb-1"><i class="fa-solid fa-triangle-exclamation"></i> ${sheetErrors.length} kategori bermasalah di pelayan:</p>
+                <ul class="list-disc list-inside space-y-0.5">${sheetErrors.map(e => `<li><strong>${esc(e.tab)}</strong>: ${esc(e.msg)}</li>`).join('')}</ul></div>
+                <button onclick="App.dismissBanner()" class="underline shrink-0">Tutup</button></div>`, 'warn');
+    } else if (S.all.length === 0) {
+      banner(`<div class="flex items-start justify-between gap-4">
+                <p><i class="fa-solid fa-circle-info"></i> Sambungan berjaya, tetapi <strong>tiada rekod</strong> dalam mana-mana kategori. Jadual masih kosong — belum ada penghantaran borang.</p>
+                <button onclick="App.dismissBanner()" class="underline shrink-0">Tutup</button></div>`, 'warn');
+    }
+
+  } catch (e) {
+    S.all = []; S.byTab = {};
+    banner(`<div class="flex items-start justify-between gap-4">
+              <div><p class="font-bold mb-1"><i class="fa-solid fa-circle-xmark"></i> Gagal memuatkan data — tiada data dipaparkan.</p>
+              <p class="mb-2">${esc(e.message)}</p>
+              <button onclick="App.refresh()" class="px-3 py-1.5 rounded-lg bg-red-600 text-white font-semibold text-[11px]"><i class="fa-solid fa-rotate"></i> Cuba Lagi</button>
+              <button onclick="App.openSetup()" class="px-3 py-1.5 rounded-lg border border-red-300 text-red-700 font-semibold text-[11px] ml-1"><i class="fa-solid fa-gear"></i> Tukar URL</button></div>
+              <button onclick="App.dismissBanner()" class="underline shrink-0">Tutup</button></div>`, 'error');
+
+    if (/sesi|session|log masuk/i.test(e.message)) {
+      S.token = ''; store.sDel(SS_TOKEN_KEY);
+      setTimeout(() => { hide('app'); App.showLogin(); }, 1500);
+    }
+  } finally {
+    if (!silent) hideFlex('screen-loading');
+  }
+};
+
+App.dismissBanner = clearBanner;
+
+App.refresh = async function () {
+  const ico = document.getElementById('refresh-ico');
+  ico.classList.add('fa-spin');
+  await App.loadData(true);
+  App.view === 'dashboard' ? App.renderDashboard() : App.renderTable();
+  ico.classList.remove('fa-spin');
+  toast('Data dimuat semula.', 'success');
+};
+
+/* ---------- Navigasi ---------- */
+
+function buildCategoryNav() {
+  document.getElementById('nav-categories').innerHTML = TABS.map(t =>
+    `<button onclick="App.go(${t.id})" data-nav="${t.id}" class="side-link w-full"><i class="fa-solid ${t.icon}"></i> ${esc(t.name)}</button>`
+  ).join('');
+}
+
+App.go = function (view) {
+  S.view = view;
+  document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('active', el.dataset.nav === String(view)));
+
+  const title = document.getElementById('page-title');
+  const sub = document.getElementById('page-sub');
+
+  if (view === 'dashboard') {
+    title.textContent = 'Dashboard';
+    sub.textContent = 'Pemantauan & pengurusan data terpusat';
+    show('view-dashboard'); hide('view-table');
+    App.renderDashboard();
+  } else {
+    if (view === 'all') {
+      title.textContent = 'Semua Rekod';
+      sub.textContent = `${S.all.length} rekod dari semua kategori`;
+    } else {
+      const t = TABS.find(x => x.id === view);
+      title.textContent = t.name;
+      sub.textContent = `Senarai rekod kategori ${t.name}`;
+    }
+    hide('view-dashboard'); show('view-table');
+    App.renderTable();
+  }
+
+  if (window.innerWidth < 1024) {
+    const sb = document.getElementById('sidebar');
+    if (!sb.classList.contains('-translate-x-full')) App.toggleSidebar();
+  }
+};
+
+App.toggleSidebar = function () {
+  const sb = document.getElementById('sidebar');
+  const bd = document.getElementById('backdrop');
+  const closed = sb.classList.contains('-translate-x-full');
+  sb.classList.toggle('-translate-x-full', !closed);
+  bd.classList.toggle('hidden', closed ? false : true);
+};
+
+/* ---------- Dashboard ---------- */
+
+App.resetDashFilter = function () {
+  document.getElementById('dash-from').value = '';
+  document.getElementById('dash-to').value = '';
+  App.renderDashboard();
+};
+
+function dateRangeFilter(rows, fromId, toId) {
+  const fromV = document.getElementById(fromId)?.value;
+  const toV = document.getElementById(toId)?.value;
+  if (!fromV && !toV) return rows;
+  const from = fromV ? new Date(fromV) : null;
+  const to = toV ? new Date(toV) : null;
+  if (to) to.setHours(23, 59, 59, 999);
+  return rows.filter(r => {
+    const d = parseDate(r.date);
+    if (!d) return false;
+    if (from && d < from) return false;
+    if (to && d > to) return false;
+    return true;
+  });
+}
+
+App.renderDashboard = function () {
+  const rows = dateRangeFilter(S.all, 'dash-from', 'dash-to');
+  const count = (st) => rows.filter(r => r.status === st).length;
+
+  document.getElementById('stat-total').textContent = rows.length;
+  document.getElementById('stat-selesai').textContent = count('TELAH SELESAI');
+  document.getElementById('stat-proses').textContent = count('SEDANG DI PROSES');
+  document.getElementById('stat-semakan').textContent = count('DALAM SEMAKAN');
+
+  const per = (st) => TABS.map(t => rows.filter(r => r.tabId === t.id && r.status === st).length);
+
+  if (S.charts.cat) S.charts.cat.destroy();
+  S.charts.cat = new Chart(document.getElementById('chart-cat'), {
+    type: 'bar',
+    data: {
+      labels: TABS.map(t => t.name),
+      datasets: [
+        { label: 'Dalam Semakan',   data: per('DALAM SEMAKAN'),   backgroundColor: '#1A4A9A', borderRadius: 6 },
+        { label: 'Sedang Diproses', data: per('SEDANG DI PROSES'), backgroundColor: '#F59E0B', borderRadius: 6 },
+        { label: 'Telah Selesai',   data: per('TELAH SELESAI'),    backgroundColor: '#10B981', borderRadius: 6 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 11 } } } },
+      scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, grid: { color: '#F1F5F9' } } }
+    }
+  });
+
+  if (S.charts.status) S.charts.status.destroy();
+  S.charts.status = new Chart(document.getElementById('chart-status'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Telah Selesai', 'Sedang Diproses', 'Dalam Semakan'],
+      datasets: [{ data: [count('TELAH SELESAI'), count('SEDANG DI PROSES'), count('DALAM SEMAKAN')],
+                   backgroundColor: ['#10B981', '#F59E0B', '#1A4A9A'], borderWidth: 0 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '68%',
+               plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { size: 11 } } } } }
+  });
+};
+
+/* ---------- Jadual ---------- */
+
+function buildColumnPicker() {
+  document.getElementById('col-list').innerHTML = COLUMNS.map(c => `
+    <label class="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer">
+      <input type="checkbox" ${S.cols[c.key] ? 'checked' : ''} onchange="App.toggleCol('${c.key}')" class="accent-brand">
+      <span class="text-xs text-slate-700">${esc(c.label)}</span>
+    </label>`).join('');
+}
+
+App.toggleCol = function (key) { S.cols[key] = !S.cols[key]; App.renderTable(); };
+
+App.toggleColMenu = function (ev) {
+  ev.stopPropagation();
+  document.getElementById('col-menu').classList.toggle('hidden');
+};
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('col-menu');
+  if (menu && !menu.contains(e.target)) menu.classList.add('hidden');
+});
+
+App.resetFilters = function () {
+  ['f-search', 'f-status', 'f-from', 'f-to'].forEach(id => document.getElementById(id).value = '');
+  App.renderTable();
+};
+
+App.renderTable = function () {
+  let rows = S.view === 'all' ? S.all : (S.byTab[S.view] || []);
+
+  const q = document.getElementById('f-search').value.trim().toLowerCase();
+  const st = document.getElementById('f-status').value;
+
+  rows = dateRangeFilter(rows, 'f-from', 'f-to');
+  if (st) rows = rows.filter(r => r.status === st);
+  if (q) rows = rows.filter(r => [r.ref, r.name, r.phone, r.address, r.detail, r.option, r.category].join(' ').toLowerCase().includes(q));
+
+  S.filtered = rows;
+
+  const c = S.cols;
+  const th = (label, extra = '') => `<th class="px-4 py-3 whitespace-nowrap ${extra}">${label}</th>`;
+  document.getElementById('thead-row').innerHTML =
+    (c.date ? th('Tarikh') : '') + (c.category ? th('Kategori') : '') + (c.ref ? th('No. Rujukan') : '') +
+    (c.name ? th('Nama Pemohon') : '') + (c.ic ? th('No. KP', 'bg-amber-50/70') : '') +
+    (c.address ? th('Alamat') : '') + (c.phone ? th('No. Telefon') : '') +
+    (c.detail ? th('Perincian') : '') + (c.attach ? th('Lampiran', 'text-center') : '') +
+    (c.status ? th('Status', 'text-center') : '') + (c.action ? th('Tindakan', 'text-center') : '') +
+    (c.donedate ? th('Tarikh Selesai', 'bg-emerald-50/70') : '') + (c.report ? th('Laporan', 'bg-emerald-50/70 text-center') : '');
+
+  const tbody = document.getElementById('tbody');
+  document.getElementById('table-count').textContent = `${rows.length} rekod`;
+
+  if (!rows.length) {
+    const span = Object.values(c).filter(Boolean).length || 1;
+    tbody.innerHTML = `<tr><td colspan="${span}" class="px-4 py-16 text-center">
+        <i class="fa-regular fa-folder-open text-3xl text-slate-300 mb-3 block"></i>
+        <p class="text-sm font-semibold text-slate-500">Tiada rekod dijumpai</p>
+        <p class="text-xs text-slate-400 mt-1">Cuba laraskan penapis, atau muat semula data.</p></td></tr>`;
+    return;
+  }
+
+  const pillClass = (s) => s === 'TELAH SELESAI' ? 'pill-selesai' : (s === 'SEDANG DI PROSES' ? 'pill-proses' : 'pill-semakan');
+
+  tbody.innerHTML = rows.map(r => {
+    const link = (url, label, cls) => {
+      const first = String(url).split(',')[0].trim();
+      if (!first || first.length < 6) return '<span class="text-slate-300">—</span>';
+      return `<a href="${esc(first)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold ${cls} transition"><i class="fa-solid fa-arrow-up-right-from-square"></i> ${label}</a>`;
+    };
+
+    let tr = '<tr class="hover:bg-slate-50 transition">';
+    if (c.date)     tr += `<td class="px-4 py-3 whitespace-nowrap text-xs text-slate-500 font-mono">${esc(String(r.date).split(' ')[0] || '—')}</td>`;
+    if (c.category) tr += `<td class="px-4 py-3"><span class="pill bg-blue-50 text-brand">${esc(r.category)}</span></td>`;
+    if (c.ref)      tr += `<td class="px-4 py-3 font-mono text-xs text-slate-600">${esc(r.ref || '—')}</td>`;
+    if (c.name)     tr += `<td class="px-4 py-3 font-semibold text-sm">${esc(r.name || 'Tanpa Nama')}</td>`;
+    if (c.ic)       tr += `<td class="px-4 py-3 text-xs font-mono text-slate-700 whitespace-nowrap bg-amber-50/30">${esc(r.ic || '—')}</td>`;
+    if (c.address)  tr += `<td class="px-4 py-3 text-xs text-slate-600 max-w-[180px] truncate" title="${esc(r.address)}">${esc(r.address || '—')}</td>`;
+    if (c.phone)    tr += `<td class="px-4 py-3 text-xs text-slate-600 font-mono whitespace-nowrap">${esc(r.phone || '—')}</td>`;
+    if (c.detail)   tr += `<td class="px-4 py-3 text-xs text-slate-500 max-w-[260px] truncate" title="${esc(r.detail)}">${esc(r.detail || '—')}</td>`;
+    if (c.attach)   tr += `<td class="px-4 py-3 text-center">${link(r.attach, 'Lihat', 'bg-slate-100 text-slate-700 hover:bg-slate-200')}</td>`;
+    if (c.status)   tr += `<td class="px-4 py-3 text-center"><span class="pill ${pillClass(r.status)}">${esc(r.status)}</span></td>`;
+    if (c.action)   tr += `<td class="px-4 py-3 text-center"><button onclick="App.openEdit('${esc(r.ref)}','${esc(r.gid)}')" class="w-8 h-8 rounded-lg text-brand hover:bg-blue-50 transition" title="Kemas kini tindakan"><i class="fa-solid fa-pen-to-square"></i></button></td>`;
+    if (c.donedate) tr += `<td class="px-4 py-3 text-xs text-slate-500 font-mono whitespace-nowrap bg-emerald-50/30">${esc(String(r.doneDate).split(' ')[0] || '—')}</td>`;
+    if (c.report)   tr += `<td class="px-4 py-3 text-center bg-emerald-50/30">${link(r.report, 'Laporan', 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200')}</td>`;
+    return tr + '</tr>';
+  }).join('');
+};
+
+/* ---------- Modal edit / tindakan ---------- */
+
+App.openEdit = function (ref, gid) {
+  const rec = S.all.find(r => r.ref === ref && String(r.gid) === String(gid));
+  if (!rec) return toast('Rekod tidak dijumpai.', 'error');
+
+  document.getElementById('edit-ref').value = ref;
+  document.getElementById('edit-gid').value = gid;
+  document.getElementById('edit-ref-show').value = ref;
+  document.getElementById('edit-name-show').value = rec.name || 'Tanpa Nama';
+  document.getElementById('edit-status').value = rec.status;
+  document.getElementById('up-file').value = '';
+  document.getElementById('build-summary').value = '';
+  document.getElementById('build-images').value = '';
+
+  App.onStatusChange();
+  showFlex('modal-edit');
+};
+
+App.closeModal = (id) => hideFlex(id);
+
+App.onStatusChange = function () {
+  const st = document.getElementById('edit-status').value;
+  const box = document.getElementById('report-box');
+  const label = document.getElementById('report-label');
+  if (st === 'TELAH SELESAI' || st === 'SEDANG DI PROSES') {
+    box.classList.remove('hidden');
+    label.textContent = st === 'TELAH SELESAI' ? 'Laporan Penyelesaian Akhir' : 'Laporan Tindakan (Dalam Proses)';
+  } else {
+    box.classList.add('hidden');
+  }
+};
+
+App.onMethodChange = function () {
+  const m = document.querySelector('input[name="rmethod"]:checked').value;
+  document.getElementById('method-upload').classList.toggle('hidden', m !== 'upload');
+  document.getElementById('method-build').classList.toggle('hidden', m !== 'build');
+};
+
+App.saveStatus = async function () {
+  const ref = document.getElementById('edit-ref').value;
+  const gid = document.getElementById('edit-gid').value;
+  const status = document.getElementById('edit-status').value;
+  const btn = document.getElementById('save-btn');
+  const original = btn.innerHTML;
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan…';
+
+  try {
+    let payload;
+
+    if (status === 'DALAM SEMAKAN') {
+      payload = { action: 'update_status', refNo: ref, tabId: gid, newStatus: status };
+    } else {
+      const method = document.querySelector('input[name="rmethod"]:checked').value;
+      payload = { action: 'complete_ticket', refNo: ref, tabId: gid, newStatus: status, reportMethod: method };
+
+      if (method === 'upload') {
+        const f = document.getElementById('up-file').files[0];
+        if (f) payload.fileData = await fileToB64(f);
+      } else {
+        const summary = document.getElementById('build-summary').value.trim();
+        if (!summary) throw new Error('Sila masukkan ringkasan tindakan.');
+        payload.summary = summary;
+        payload.images = [];
+        const imgs = document.getElementById('build-images').files;
+        for (let i = 0; i < Math.min(imgs.length, 3); i++) payload.images.push(await fileToB64(imgs[i]));
+      }
+    }
+
+    const res = await api(payload);
+
+    // Kemas kini state tempatan supaya jadual terus reflect tanpa reload penuh
+    S.all.filter(r => r.ref === ref && String(r.gid) === String(gid)).forEach(r => {
+      r.status = normStatus(status);
+      if (res.completedDate) r.doneDate = res.completedDate;
+      if (res.reportLink) r.report = res.reportLink;
+    });
+
+    App.closeModal('modal-edit');
+    toast(res.message || 'Tindakan berjaya dikemas kini.', 'success');
+    S.view === 'dashboard' ? App.renderDashboard() : App.renderTable();
+
+  } catch (e) {
+    toast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+};
+
+/* ---------- Eksport Excel ---------- */
+
+App.exportExcel = function () {
+  const rows = S.filtered.length ? S.filtered : (S.view === 'all' ? S.all : (S.byTab[S.view] || []));
+  if (!rows.length) return toast('Tiada data untuk dimuat turun.', 'error');
+
+  // No. KP ialah data peribadi sensitif (PDPA) — kena sahkan setiap kali,
+  // tak dimasukkan secara senyap.
+  const adaIc = rows.some(r => r.ic);
+  let sertakanIc = false;
+  if (adaIc) {
+    sertakanIc = confirm(
+      'Sertakan No. KP dalam fail Excel ini?\n\n' +
+      'No. KP ialah data peribadi sensitif di bawah PDPA. Fail yang mengandunginya ' +
+      'perlu disimpan dengan selamat dan tidak dikongsi sesuka hati.\n\n' +
+      'OK = sertakan No. KP    ·    Batal = tanpa No. KP'
+    );
+  }
+
+  const data = rows.map(r => {
+    const row = {
+      'Tarikh': r.date, 'Kategori': r.category, 'No. Rujukan': r.ref, 'Nama Pemohon': r.name,
+      'Alamat': r.address, 'No. Telefon': r.phone, 'Pilihan/Kategori': r.option, 'Perincian': r.detail,
+      'Lampiran': r.attach, 'Status': r.status, 'Tarikh Selesai': r.doneDate, 'Laporan': r.report
+    };
+    if (sertakanIc) row['No. KP'] = r.ic || '';
+    return row;
+  });
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  const label = S.view === 'all' ? 'Semua Rekod' : (TABS.find(t => t.id === S.view)?.name || 'Rekod');
+  XLSX.utils.book_append_sheet(wb, ws, label.substring(0, 30));
+  XLSX.writeFile(wb, `${fileSafe(BRAND.name)}_${label.replace(/\W+/g, '_')}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  toast(`${rows.length} rekod dieksport.`, 'success');
+};
+
+/* ---------- Laporan PDF ---------- */
+
+App.buildReport = function () {
+  const isDash = S.view === 'dashboard';
+  const rows = isDash ? dateRangeFilter(S.all, 'dash-from', 'dash-to') : S.filtered;
+
+  if (!rows.length) return toast('Tiada data untuk dijana laporan.', 'error');
+
+  const count = (st) => rows.filter(r => r.status === st).length;
+  const title = isDash ? 'Laporan Keseluruhan' : (S.view === 'all' ? 'Laporan Semua Rekod' : `Laporan ${TABS.find(t => t.id === S.view)?.name}`);
+  const today = new Date().toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const stat = (label, val, color) => `
+    <div style="flex:1;border:1px solid #E2E8F0;border-radius:8px;padding:12px;">
+      <div style="font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:#64748B;font-weight:700;margin-bottom:4px;">${label}</div>
+      <div style="font-size:22px;font-weight:800;color:${color};">${val}</div>
+    </div>`;
+
+  const tableRows = rows.slice(0, 40).map(r => `
+    <tr>
+      <td style="padding:7px;border-bottom:1px solid #F1F5F9;font-size:9px;font-family:monospace;">${esc(String(r.date).split(' ')[0])}</td>
+      <td style="padding:7px;border-bottom:1px solid #F1F5F9;font-size:9px;font-family:monospace;">${esc(r.ref)}</td>
+      <td style="padding:7px;border-bottom:1px solid #F1F5F9;font-size:9px;">${esc(r.category)}</td>
+      <td style="padding:7px;border-bottom:1px solid #F1F5F9;font-size:9px;font-weight:600;">${esc(r.name)}</td>
+      <td style="padding:7px;border-bottom:1px solid #F1F5F9;font-size:9px;">${esc(r.status)}</td>
+    </tr>`).join('');
+
+  const chartImg = (isDash && S.charts.cat) ? S.charts.cat.canvas.toDataURL('image/png', 1.0) : '';
+
+  document.getElementById('pdf-body').innerHTML = `
+    <div class="a4">
+      <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #1A4A9A;padding-bottom:14px;margin-bottom:22px;">
+        <img src="${BRAND_LOGO}" style="height:56px;">
+        <div style="text-align:right;">
+          <h1 style="margin:0;font-size:17px;font-weight:800;color:#12275B;text-transform:uppercase;letter-spacing:.5px;">${esc(title)}</h1>
+          <p style="margin:4px 0 0;font-size:10px;color:#64748B;">${esc(BRAND.orgName || "")}</p>
+          <p style="margin:2px 0 0;font-size:10px;color:#64748B;">Tarikh: ${today}</p>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-bottom:20px;">
+        ${stat('Jumlah', rows.length, '#0F172A')}
+        ${stat('Selesai', count('TELAH SELESAI'), '#10B981')}
+        ${stat('Diproses', count('SEDANG DI PROSES'), '#F59E0B')}
+        ${stat('Semakan', count('DALAM SEMAKAN'), '#1A4A9A')}
+      </div>
+
+      ${chartImg ? `<div style="border:1px solid #E2E8F0;border-radius:8px;padding:14px;margin-bottom:20px;">
+        <p style="margin:0 0 10px;font-size:11px;font-weight:700;text-transform:uppercase;color:#334155;">Rekod Mengikut Kategori</p>
+        <img src="${chartImg}" style="width:100%;height:auto;">
+      </div>` : ''}
+
+      <p style="margin:0 0 8px;font-size:11px;font-weight:700;text-transform:uppercase;color:#334155;">
+        Senarai Rekod ${rows.length > 40 ? '(40 pertama)' : ''}
+      </p>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr style="background:#F1F5F9;">
+          <th style="padding:7px;text-align:left;font-size:9px;text-transform:uppercase;color:#475569;">Tarikh</th>
+          <th style="padding:7px;text-align:left;font-size:9px;text-transform:uppercase;color:#475569;">Rujukan</th>
+          <th style="padding:7px;text-align:left;font-size:9px;text-transform:uppercase;color:#475569;">Kategori</th>
+          <th style="padding:7px;text-align:left;font-size:9px;text-transform:uppercase;color:#475569;">Nama</th>
+          <th style="padding:7px;text-align:left;font-size:9px;text-transform:uppercase;color:#475569;">Status</th>
+        </tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+
+      <div style="margin-top:auto;padding-top:14px;border-top:1px solid #E2E8F0;text-align:center;font-size:9px;color:#94A3B8;">
+        Dijana automatik oleh Sistem ${esc(BRAND.name || "")} · ${today}
+      </div>
+    </div>`;
+
+  showFlex('modal-pdf');
+};
+
+App.downloadPdf = function () {
+  const el = document.getElementById('pdf-body');
+  html2pdf().set({
+    margin: 0,
+    filename: `${fileSafe(BRAND.name)}_Laporan_${new Date().toISOString().slice(0, 10)}.pdf`,
+    image: { type: 'jpeg', quality: .98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).from(el).save().then(() => App.closeModal('modal-pdf'));
+};
+
+/* ═══════════════════════════ MULA ═══════════════════════════ */
+
+(function start() {
+  if (window.applyBrand) applyBrand('Dashboard Admin');
+  if (!S.url) { App.openSetup(); return; }
+  App.showLogin();
+})();
+</script>
+</body>
+</html>

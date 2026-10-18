@@ -1,0 +1,56 @@
+rules_version = '2';
+
+// =============================================================================
+// Firestore Security Rules — Portal Rakyat
+// Tampal di: Firebase console > Firestore Database > Rules > Publish
+//
+// Hanya ada SATU koleksi: users/{uid} — profil akaun rakyat (nama, IC, telefon...).
+//   • Setiap pengguna hanya boleh baca / ubah / padam dokumen NAMA SENDIRI.
+//   • Tiada sesiapa (termasuk pengguna lain) boleh senarai atau baca profil orang lain.
+//   • Dashboard admin TIDAK guna Firestore — data aduan ada dalam Google Sheet.
+//   • Semua koleksi lain ditutup sepenuhnya.
+//
+// Kalau anda menambah medan baharu pada borang pendaftaran/profil dalam index.html,
+// tambah nama medan itu dalam senarai `hasOnly([...])` di bawah (dua tempat).
+//
+// Ujian: Firebase console > Firestore > Rules > "Rules Playground".
+// (Peraturan ini belum diuji dengan emulator Firebase — sila uji selepas publish:
+//  daftar akaun baharu, ubah profil, dan cuba baca dokumen pengguna lain.)
+// =============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /users/{uid} {
+
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      allow create: if request.auth != null
+                    && request.auth.uid == uid
+                    && request.resource.data.keys().hasOnly(['nama', 'email', 'ic', 'phone', 'uid', 'address', 'createdAt'])
+                    && request.resource.data.uid == uid
+                    && request.resource.data.nama is string    && request.resource.data.nama.size()    <= 150
+                    && request.resource.data.email is string   && request.resource.data.email.size()   <= 150
+                    && request.resource.data.ic is string      && request.resource.data.ic.size()      <= 20
+                    && request.resource.data.phone is string   && request.resource.data.phone.size()   <= 20
+                    && request.resource.data.address is string && request.resource.data.address.size() <= 500;
+
+      allow update: if request.auth != null
+                    && request.auth.uid == uid
+                    && request.resource.data.keys().hasOnly(['nama', 'email', 'ic', 'phone', 'uid', 'address', 'createdAt'])
+                    && request.resource.data.uid == uid
+                    && request.resource.data.nama is string    && request.resource.data.nama.size()    <= 150
+                    && request.resource.data.ic is string      && request.resource.data.ic.size()      <= 20
+                    && request.resource.data.phone is string   && request.resource.data.phone.size()   <= 20
+                    && request.resource.data.address is string && request.resource.data.address.size() <= 500;
+
+      // Hak pemadaman data sendiri (PDPA).
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Tutup semua yang lain.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

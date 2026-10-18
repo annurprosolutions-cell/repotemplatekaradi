@@ -1,0 +1,23 @@
+{
+  "maintenance": false,
+  "category_status": {
+    "jemputan": true,
+    "permohonan": true,
+    "aduan": true,
+    "temujanji": true,
+    "maklum_balas": true,
+    "sukarelawan": true
+  },
+  "info": {
+    "hours": "Isnin - Jumaat: 8:00 PG - 5:00 PTG",
+    "location": "__OFFICE_LABEL__",
+    "map_link": "https://maps.google.com"
+  },
+  "slides": [
+    "assets/placeholder-slide.svg"
+  ],
+  "memos": [
+    "Selamat datang ke portal rasmi __APP_NAME__."
+  ],
+  "gov_info": []
+}

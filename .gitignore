@@ -1,0 +1,9 @@
+# Folder klien dijana oleh new-client.sh dan mengandungi emel/nombor klien.
+# JANGAN commit ke repo template ini. Setiap klien ada repo laman web sendiri
+# (hanya isi clients/<slug>/site/).
+clients/
+
+# Fail sementara
+*.bak
+.DS_Store
+node_modules/

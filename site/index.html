@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Rakyat</title>
+    <!-- Konfigurasi klien (edit config.js SAHAJA) + pembantu jenama -->
+    <script src="config.js"></script>
+    <script src="assets/brand.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FIREBASE SDK (Modular - 11.6.1) — untuk akaun RAKYAT (daftar/log masuk/profil).
+         Konfigurasi dibaca dari config.js. Dashboard admin TIDAK guna Firebase. -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // --- 1. SETUP FIREBASE ---
+        const firebaseConfig = (window.KARADI_CONFIG && window.KARADI_CONFIG.FIREBASE) || {};
+        // Initialize Firebase
+        let auth, db;
+        try {
+            if (!firebaseConfig.apiKey || /__[A-Z0-9_]+__/.test(firebaseConfig.apiKey)) {
+                throw new Error("Firebase belum dikonfigurasi — isi FIREBASE dalam config.js (lihat docs/02-FIREBASE.md)");
+            }
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            window.auth = auth;
+            window.db = db;
+            window.firebaseLoaded = true;
+        } catch (e) {
+            console.warn("Ralat Firebase:", e);
+            window.firebaseLoaded = false;
+        }
+        // Expose functions globally for inline HTML handlers
+        window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+        window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+        window.onAuthStateChanged = onAuthStateChanged;
+        window.signOut = signOut;
+        window.sendPasswordResetEmail = sendPasswordResetEmail;
+        window.doc = doc;
+        window.setDoc = setDoc;
+        window.getDoc = getDoc;
+        window.updateDoc = updateDoc;
+    </script>
+    <style>
+        /* --- OFFICIAL THEME VARIABLES --- */
+        :root {
+            --royal-blue: #1A4A9A;
+            --hover-blue: #143a7a;
+            --bg-light: #F5F6F8;
+            --text-dark: #1f2937;
+            --text-muted: #6b7280;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+        /* --- UI COMPONENTS --- */
+        .card {
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+            border-color: #d1d5db;
+        }
+        .card-disabled {
+            opacity: 0.6;
+            background-color: #f3f4f6;
+            cursor: not-allowed !important;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        .btn-primary {
+            background-color: var(--royal-blue);
+            color: white;
+            font-weight: 600;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(26, 74, 154, 0.2);
+        }
+        .btn-primary:hover {
+            background-color: var(--hover-blue);
+            box-shadow: 0 4px 6px rgba(26, 74, 154, 0.3);
+        }
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid var(--royal-blue);
+            color: var(--royal-blue);
+            font-weight: 600;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-outline:hover {
+            background-color: #eff6ff;
+        }
+        /* Slider */
+        .slider-container {
+            position: relative; width: 100%; height: 280px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        @media (min-width: 640px) { .slider-container { height: 400px; } }
+        .slide {
+            position: absolute; width: 100%; height: 100%;
+            opacity: 0; transition: opacity 0.8s ease-in-out;
+            background-size: cover; background-position: center;
+        }
+        .slide.active { opacity: 1; }
+        .slider-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 60%);
+            pointer-events: none; z-index: 5;
+        }
+        .slider-nav {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            background: rgba(255,255,255,0.8);
+            color: var(--royal-blue);
+            width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 20; transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .slider-nav:hover { background: white; transform: translateY(-50%) scale(1.1); }
+        .slider-prev { left: 16px; }
+        .slider-next { right: 16px; }
+        /* Ticker Animation */
+        .ticker-wrap {
+            width: 100%; overflow: hidden; background: #1e3a8a;
+            color: white;
+            white-space: nowrap; position: relative;
+        }
+        .ticker-move {
+            display: inline-block;
+            white-space: nowrap;
+            padding-left: 100%;
+            animation: ticker-anim 30s linear infinite;
+        }
+        .ticker-move:hover { animation-play-state: paused; }
+        .ticker-item { display: inline-block; padding: 0 2rem; font-size: 0.9rem; font-weight: 500; }
+        @keyframes ticker-anim {
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(-100%, 0, 0); }
+        }
+        input, select, textarea {
+            background-color: #ffffff !important;
+            border: 1px solid #d1d5db !important;
+            color: #1f2937 !important;
+            font-family: 'Inter', sans-serif;
+            width: 100%; border-radius: 6px; padding: 0.75rem;
+            transition: border-color 0.2s;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--royal-blue) !important;
+            outline: 2px solid rgba(26, 74, 154, 0.2);
+            box-shadow: none !important;
+        }
+        /* reset style checkbox supaya tak terikut rule input di atas */
+        input[type="checkbox"] {
+            width: auto !important;
+            padding: 0 !important;
+            border-radius: 3px !important;
+            accent-color: var(--royal-blue);
+            flex-shrink: 0;
+        }
+        label { color: #4b5563; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.25rem; display: block; }
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fade-in-up 0.5s ease-out forwards; }
+        @keyframes bounce-gentle {
+            0%, 100% { transform: translateY(-5%); }
+            50% { transform: translateY(0); }
+        }
+        .animate-bounce-gentle { animation: bounce-gentle 2s infinite; }
+        /* Toast Notifications */
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        .toast { animation: slideIn 0.3s ease-out forwards; }
+        .toast.hiding { animation: fadeOut 0.3s ease-out forwards; }
+        #global-loader {
+            background-image: radial-gradient(circle at center, white 0%, #f5f6f8 100%);
+        }
+    </style>
+</head>
+<body class="flex flex-col justify-between">
+    <!-- Global Loader -->
+    <div id="global-loader" class="fixed inset-0 z-[100] flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-xl animate-bounce-gentle border border-blue-50 relative">
+            <div class="absolute inset-0 border-4 border-t-blue-600 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+            <img src="assets/logo.svg" data-brand-logo alt="Logo" class="h-14 w-14 object-contain">
+        </div>
+        <h2 class="text-2xl font-bold text-[#1A4A9A] tracking-widest" data-brand="name">Portal Rakyat</h2>
+        <p id="loader-text" class="text-sm text-gray-500 mt-2 font-medium animate-pulse" data-i18n="loading_text">Memuatkan Sistem...</p>
+    </div>
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-24 right-5 z-[60] flex flex-col gap-3 pointer-events-none"></div>
+    <!-- GOV INFO MODAL (POPUP) -->
+    <div id="modal-gov-info" class="fixed inset-0 z-[70] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-opacity duration-300">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative animate-fade-in flex flex-col">
+            <button onclick="closeGovInfoModal()" class="absolute top-3 right-3 bg-black/50 hover:bg-black/80 text-white rounded-full w-8 h-8 flex items-center justify-center z-10 transition"><i class="fas fa-times"></i></button>
+            <div class="relative w-full bg-gray-200">
+                <img id="modal-gov-img" src="" class="w-full h-auto max-h-[60vh] object-contain mx-auto" onerror="this.onerror=null;this.src='assets/no-image.svg'">
+            </div>
+            <div class="p-6 md:p-8 flex-grow">
+                <h2 id="modal-gov-title" class="text-xl md:text-2xl font-bold text-[#1A4A9A] mb-4 border-b pb-2">Title</h2>
+                <div id="modal-gov-desc" class="text-gray-700 text-sm md:text-base leading-relaxed whitespace-pre-wrap font-medium">Description</div>
+            </div>
+            <div class="p-4 bg-gray-50 border-t flex justify-end sticky bottom-0">
+                <button onclick="closeGovInfoModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-full font-bold text-sm transition">Tutup</button>
+            </div>
+        </div>
+    </div>
+    <!-- HISTORY DETAIL MODAL (Shared by History and Status Check) -->
+    <div id="modal-history-detail" class="fixed inset-0 z-[80] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-opacity duration-300">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto relative animate-fade-in flex flex-col">
+            <div class="p-6 border-b flex justify-between items-start bg-gray-50">
+                <div>
+                    <h3 class="text-lg font-bold text-[#1A4A9A]">Butiran Sejarah</h3>
+                    <p id="hist-modal-cat" class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Kategori</p>
+                </div>
+                <button onclick="closeHistoryModal()" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-times fa-lg"></i></button>
+            </div>
+            <div class="p-6 space-y-5">
+                <div class="text-center bg-gray-50 p-4 rounded-lg border border-gray-100">
+                    <div id="hist-modal-ref" class="text-xl font-mono font-bold text-gray-800 tracking-widest">REF123456</div>
+                    <p id="hist-modal-date" class="text-xs text-gray-500 mt-1">Date</p>
+                </div>
+                <div>
+                    <h4 class="text-xs font-bold text-[#1A4A9A] uppercase border-b pb-1 mb-2">Maklumat Permohonan</h4>
+                    <div id="hist-modal-content" class="space-y-3 text-sm"></div>
+                </div>
+                <div id="hist-modal-attachments-container" class="hidden">
+                    <h4 class="text-xs font-bold text-[#1A4A9A] uppercase border-b pb-1 mb-2">Lampiran</h4>
+                    <div id="hist-modal-attachments" class="space-y-2 text-sm"></div>
+                </div>
+                <div>
+                    <h4 class="text-xs font-bold text-[#1A4A9A] uppercase border-b pb-1 mb-2">Status Terkini</h4>
+                    <div class="text-center py-2">
+                        <span id="hist-modal-status" class="inline-block px-4 py-1.5 rounded-full text-sm font-bold shadow-sm">STATUS</span>
+                    </div>
+                </div>
+                <div id="hist-modal-report" class="hidden bg-green-50 p-4 rounded-lg border border-green-100 text-center mt-4">
+                    <div id="hist-modal-report-title" class="text-green-700 font-bold text-sm mb-1"><i class="fas fa-check-circle mr-1"></i> Tindakan Selesai</div>
+                    <p id="hist-modal-end-date" class="text-xs text-gray-600 mb-0 hidden">Tarikh Selesai: -</p>
+                    <a id="hist-modal-link" href="#" target="_blank" class="hidden w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-sm inline-flex items-center justify-center transition shadow-md mt-3">
+                        <i class="fas fa-file-pdf mr-2"></i> Lihat Laporan
+                    </a>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 border-t flex justify-end sticky bottom-0">
+                <button onclick="closeHistoryModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded font-bold text-xs transition">Tutup</button>
+            </div>
+        </div>
+    </div>
+    <!-- SUCCESS POPUP MODAL -->
+    <div id="modal-success-popup" class="fixed inset-0 z-[75] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-opacity duration-300">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-md p-8 text-center animate-fade-in">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-check text-green-600 text-3xl"></i></div>
+            <p id="popup-success-msg" class="text-gray-700 font-medium mb-6">Terima kasih!</p>
+            <button onclick="closeSuccessPopup()" class="btn-primary w-full py-2.5 px-6">OK</button>
+        </div>
+    </div>
+    <!-- PRIVACY POLICY MODAL -->
+    <div id="modal-privacy-policy" class="fixed inset-0 z-[75] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-opacity duration-300">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto relative animate-fade-in">
+            <div class="p-6 border-b flex justify-between items-center sticky top-0 bg-white z-10">
+                <h2 class="text-lg font-bold text-[#1A4A9A]">Dasar Privasi &amp; Perlindungan Data Peribadi</h2>
+                <button onclick="closePrivacyModal()" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-times fa-lg"></i></button>
+            </div>
+            <div class="p-6 space-y-4 text-sm text-gray-700 leading-relaxed">
+                <p><strong>Data yang dikumpul:</strong> Nama penuh, No. Kad Pengenalan, No. telefon, alamat, e-mel (jika ada), butiran aduan/permohonan, serta dokumen sokongan yang anda muat naik (cth. salinan IC, bukti gambar).</p>
+                <p><strong>Tujuan:</strong> Data ini dikumpul semata-mata untuk memproses aduan, permohonan bantuan, temujanji, jemputan, maklum balas atau pendaftaran sukarelawan yang anda hantar melalui sistem <span data-brand="name">ini</span>, dan untuk menghubungi anda berkaitan status permohonan tersebut.</p>
+                <p><strong>Perkongsian:</strong> Data hanya diakses oleh kakitangan <span data-brand="orgName">pusat khidmat</span> yang bertanggungjawab memproses permohonan anda. Data tidak dijual atau dikongsi dengan pihak ketiga untuk tujuan pemasaran.</p>
+                <p><strong>Tempoh simpanan:</strong> Data disimpan selama tempoh yang munasabah untuk rujukan operasi pusat khidmat, selepas itu akan diarkibkan atau dipadam mengikut keperluan.</p>
+                <p><strong>Hak anda:</strong> Anda berhak memohon akses kepada data anda, membetulkan data yang tidak tepat, atau bertanya mengenai penggunaan data anda dengan menghubungi kami melalui <a href="#" data-brand-href="mailto" data-brand="email" class="text-blue-600 underline">emel pusat khidmat</a>.</p>
+                <p><strong>Keselamatan:</strong> Langkah teknikal diambil untuk melindungi data anda daripada capaian tanpa kebenaran.</p>
+                <p class="text-xs text-gray-400 italic pt-3 border-t">Nota: Ini draf notis privasi ringkas sebagai titik permulaan sahaja. Disyorkan semakan oleh peguam/pihak berkelayakan sebelum dijadikan dasar rasmi sepenuhnya.</p>
+            </div>
+            <div class="p-4 bg-gray-50 border-t flex justify-end sticky bottom-0">
+                <button onclick="closePrivacyModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-full font-bold text-sm transition">Tutup</button>
+            </div>
+        </div>
+    </div>
+    <!-- HEADER -->
+    <header class="fixed w-full top-0 z-50 bg-[#1A4A9A] shadow-md border-b border-blue-800">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="showView('view-home')">
+                <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center p-1 shadow-sm">
+                    <img src="assets/logo.svg" data-brand-logo alt="Logo" class="h-full w-full object-contain">
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold leading-none text-white tracking-wide" data-brand="name">Portal Rakyat</h1>
+                    <p class="text-[0.7rem] text-blue-200 uppercase tracking-wider font-medium" data-brand="tagline"></p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div id="user-header-info" class="hidden md:flex items-center mr-2 text-white text-xs text-right"></div>
+                <button onclick="toggleLanguage()" class="flex items-center space-x-2 bg-blue-800 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition border border-blue-700 shadow-sm">
+                    <i class="fas fa-globe"></i>
+                    <span id="lang-display">BM</span>
+                </button>
+            </div>
+        </div>
+    </header>
+    <!-- MAIN CONTENT -->
+    <main class="container mx-auto p-4 flex-grow max-w-5xl mt-20 relative z-10">
+        <!-- VIEW 1: HERO LANDING -->
+        <div id="view-home" class="view-section space-y-8 animate-fade-in">
+            <div class="card p-0 overflow-hidden relative">
+                <div id="slider-wrapper" class="slider-container group bg-gray-200">
+                    <div class="slider-overlay"></div>
+                    <button class="slider-nav slider-prev opacity-0 group-hover:opacity-100 flex items-center justify-center" onclick="changeSlide(-1)"><i class="fas fa-chevron-left"></i></button>
+                    <button class="slider-nav slider-next opacity-0 group-hover:opacity-100 flex items-center justify-center" onclick="changeSlide(1)"><i class="fas fa-chevron-right"></i></button>
+                    <div class="absolute bottom-0 left-0 w-full p-6 z-10">
+                          <span class="inline-block py-1 px-3 rounded bg-blue-600 text-white text-xs font-bold uppercase tracking-wide mb-2" data-i18n="tag_official">Portal Rasmi</span>
+                        <h2 class="text-3xl md:text-4xl font-bold text-white mb-1 drop-shadow-md" data-i18n="hero_title">Selamat Datang</h2>
+                        <p class="text-white text-sm md:text-base opacity-90 max-w-xl" data-i18n="hero_subtitle">Sistem Interaksi Digital Komuniti</p>
+                    </div>
+                </div>
+                <div class="ticker-wrap py-2.5">
+                    <div id="news-ticker-content" class="ticker-move"></div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div id="action-enter-system" onclick="checkSystemAccess()" class="card card-hover p-6 cursor-pointer text-center flex flex-col items-center justify-center min-h-[160px] group border-t-4 border-t-[#1A4A9A]">
+                    <div id="icon-enter-system" class="w-14 h-14 mb-4 rounded-full bg-blue-50 flex items-center justify-center text-[#1A4A9A] group-hover:bg-[#1A4A9A] group-hover:text-white transition duration-300">
+                        <i class="fas fa-file-alt text-2xl"></i>
+                    </div>
+                    <h3 id="text-enter-system" class="text-base font-bold text-gray-800" data-i18n="action_enter">Masuk Sistem</h3>
+                    <p id="desc-enter-system" class="text-xs text-gray-500 mt-1 leading-relaxed" data-i18n="action_enter_desc">Aduan, Permohonan & Temujanji</p>
+                </div>
+                <div onclick="showView('view-status')" class="card card-hover p-6 cursor-pointer text-center flex flex-col items-center justify-center min-h-[160px] group border-t-4 border-t-teal-600">
+                    <div class="w-14 h-14 mb-4 rounded-full bg-teal-50 flex items-center justify-center text-teal-600 group-hover:bg-teal-600 group-hover:text-white transition duration-300">
+                        <i class="fas fa-search text-2xl"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-gray-800" data-i18n="action_check">Semak Status</h3>
+                    <p class="text-xs text-gray-500 mt-1 leading-relaxed" data-i18n="action_check_desc">Jejak permohonan anda</p>
+                </div>
+                <div onclick="showView('view-gov-info')" class="card card-hover p-6 cursor-pointer text-center flex flex-col items-center justify-center min-h-[160px] group border-t-4 border-t-yellow-500">
+                    <div class="w-14 h-14 mb-4 rounded-full bg-yellow-50 flex items-center justify-center text-yellow-600 group-hover:bg-yellow-500 group-hover:text-white transition duration-300">
+                        <i class="fas fa-info text-2xl"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-gray-800" data-i18n="action_info">Info Kerajaan</h3>
+                    <p class="text-xs text-gray-500 mt-1" data-i18n="action_info_desc">Biasiswa, Bantuan & Info Semasa</p>
+                </div>
+                <div onclick="showView('view-contact')" class="card card-hover p-6 cursor-pointer text-center flex flex-col items-center justify-center min-h-[160px] group border-t-4 border-t-green-600">
+                    <div class="w-14 h-14 mb-4 rounded-full bg-green-50 flex items-center justify-center text-green-600 group-hover:bg-green-600 group-hover:text-white transition duration-300">
+                        <i class="fas fa-phone text-2xl"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-gray-800" data-i18n="action_contact">Hubungi Kami</h3>
+                    <p class="text-xs text-gray-500 mt-1" data-i18n="action_contact_desc">Tanya khabar & aduan terus</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="card p-5 flex items-center space-x-4">
+                    <div class="bg-blue-100 p-3 rounded text-blue-700"><i class="fas fa-clock fa-lg"></i></div>
+                    <div>
+                        <h4 class="font-bold text-sm text-gray-800" data-i18n="quick_time">Waktu Operasi</h4>
+                        <p id="display-op-hours" class="text-xs text-gray-500" data-i18n="quick_time_desc">Isnin - Jumaat: 8:00 PG - 5:00 PTG</p>
+                    </div>
+                </div>
+                 <div id="card-location" onclick="openMap()" class="card p-5 flex items-center space-x-4 cursor-pointer hover:bg-gray-50 transition group">
+                    <div class="bg-green-100 p-3 rounded text-green-700 group-hover:bg-green-200 group-hover:text-green-800 transition"><i class="fas fa-map-marker-alt fa-lg"></i></div>
+                    <div>
+                        <div class="flex items-center">
+                            <h4 class="font-bold text-sm text-gray-800 mr-2" data-i18n="quick_loc">Lokasi Utama</h4>
+                            <i class="fas fa-external-link-alt text-[10px] text-gray-400"></i>
+                        </div>
+                        <p id="display-location" class="text-xs text-gray-500 group-hover:text-blue-600 transition" data-i18n="quick_loc_desc"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- VIEW: AUTH SELECTION -->
+        <div id="view-auth" class="view-section hidden pt-6 pb-20">
+            <div class="max-w-4xl mx-auto">
+                <div class="flex items-center mb-6">
+                    <button onclick="showView('view-home')" class="text-gray-500 mr-4 hover:text-[#1A4A9A] transition bg-white p-2 rounded-full shadow-sm"><i class="fas fa-arrow-left"></i></button>
+                    <h2 class="text-xl font-bold text-[#1A4A9A]">Akses Sistem</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="card p-8 border-t-4 border-t-[#1A4A9A]">
+                        <div class="text-center mb-6">
+                            <h3 class="text-lg font-bold text-gray-800">Ahli Berdaftar</h3>
+                            <p class="text-xs text-gray-500">Log masuk untuk jejak sejarah aduan anda</p>
+                        </div>
+                        <div class="flex border border-gray-200 rounded-lg p-1 mb-6 bg-gray-50">
+                            <button onclick="toggleAuthMode('login')" id="tab-login" class="flex-1 py-2 text-sm font-bold rounded shadow-sm bg-white text-[#1A4A9A]">Log Masuk</button>
+                            <button onclick="toggleAuthMode('signup')" id="tab-signup" class="flex-1 py-2 text-sm font-bold rounded text-gray-500 hover:text-gray-700">Daftar Baru</button>
+                        </div>
+                        <form id="form-login" class="space-y-4" onsubmit="handleLogin(event)">
+                            <input type="email" id="login-email" placeholder="Email" required>
+                            <input type="password" id="login-pass" placeholder="Kata Laluan" required>
+                            <div class="flex justify-between items-center text-xs mt-2">
+                                <button type="button" onclick="showForgotPassword()" class="text-blue-500 hover:underline">Lupa Kata Laluan?</button>
+                            </div>
+                            <button type="submit" class="btn-primary w-full py-2.5">LOG MASUK</button>
+                        </form>
+                        <form id="form-forgot-pass" class="space-y-4 hidden" onsubmit="handleForgotPassword(event)">
+                            <p class="text-xs text-gray-600 mb-2">Masukkan emel anda untuk reset kata laluan.</p>
+                            <input type="email" id="forgot-email" placeholder="Email Pendaftaran" required>
+                            <div class="flex gap-2">
+                                <button type="submit" class="btn-primary flex-1 py-2.5 text-xs">HANTAR RESET LINK</button>
+                                <button type="button" onclick="hideForgotPassword()" class="bg-gray-200 text-gray-600 px-4 rounded text-xs">BATAL</button>
+                            </div>
+                        </form>
+                        <form id="form-signup" class="space-y-4 hidden" onsubmit="handleSignup(event)">
+                            <input type="text" id="signup-name" placeholder="Nama Penuh" required>
+                            <input type="text" id="signup-ic" placeholder="No. Kad Pengenalan (Tanpa -)" pattern="\d{12}" required>
+                            <input type="tel" id="signup-phone" placeholder="No. Telefon" required>
+                            <input type="email" id="signup-email" placeholder="Email" required>
+                            <input type="password" id="signup-pass" placeholder="Kata Laluan (Min 6 aksara)" minlength="6" required>
+                            <label class="flex items-start gap-2 text-xs text-gray-600 leading-snug">
+                                <input type="checkbox" id="signup-consent" required>
+                                <span>Saya bersetuju data peribadi (termasuk No. IC) digunakan untuk tujuan permohonan/aduan melalui sistem ini. <button type="button" onclick="openPrivacyModal()" class="text-blue-600 underline font-semibold">Baca Dasar Privasi.</button></span>
+                            </label>
+                            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold w-full py-2.5 rounded transition">DAFTAR AKAUN</button>
+                        </form>
+                    </div>
+                    <div class="card p-8 border-t-4 border-t-gray-400 bg-gray-50 flex flex-col justify-center text-center">
+                        <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 text-gray-500 shadow-sm"><i class="fas fa-user-secret text-2xl"></i></div>
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">Teruskan Sebagai Tetamu</h3>
+                        <p class="text-sm text-gray-600 mb-6">Buat aduan tanpa mendaftar akaun. Anda perlu simpan No. Rujukan manual.</p>
+                        <button onclick="handleGuestAccess()" class="btn-outline w-full py-3 bg-white hover:bg-gray-100">MASUK SEBAGAI TETAMU</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- VIEW 2: DASHBOARD -->
+        <div id="view-dashboard" class="view-section hidden space-y-6">
+            <div class="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                <div>
+                    <h2 class="text-xl font-bold text-[#1A4A9A]" data-i18n="select_service_title">Pilih Kategori Perkhidmatan</h2>
+                    <p class="text-xs text-gray-500" id="welcome-msg" data-i18n="select_service_desc">Sila pilih jenis perkhidmatan yang diperlukan</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="btn-edit-profile" onclick="openProfile()" class="hidden bg-gray-100 text-gray-700 px-3 py-1.5 rounded text-xs font-bold hover:bg-gray-200 transition border border-gray-300"><i class="fas fa-user-edit mr-1"></i> Profil Saya</button>
+                    <button id="btn-my-history" onclick="fetchMemberHistory()" class="hidden bg-blue-100 text-blue-800 px-3 py-1.5 rounded text-xs font-bold hover:bg-blue-200 transition"><i class="fas fa-history mr-1"></i> Sejarah</button>
+                    <button onclick="handleLogout()" class="text-red-500 hover:text-red-700 transition px-2 border border-red-200 rounded p-1 bg-red-50"><i class="fas fa-power-off"></i></button>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="category-grid">
+                <div id="cat-Jemputan" onclick="startForm('Jemputan')" class="card card-hover p-6 cursor-pointer text-center group relative"><div class="w-12 h-12 mx-auto bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mb-3 group-hover:bg-purple-600 group-hover:text-white transition"><i class="fas fa-envelope-open-text text-xl"></i></div><h3 class="font-bold text-sm text-gray-700" data-i18n="cat_invite">Jemputan Rasmi</h3></div>
+                <div id="cat-Permohonan" onclick="startForm('Permohonan')" class="card card-hover p-6 cursor-pointer text-center group relative"><div class="w-12 h-12 mx-auto bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-3 group-hover:bg-green-600 group-hover:text-white transition"><i class="fas fa-hand-holding-heart text-xl"></i></div><h3 class="font-bold text-sm text-gray-700" data-i18n="cat_aid">Mohon Bantuan</h3></div>
+                <div id="cat-Aduan" onclick="startForm('Aduan')" class="card card-hover p-6 cursor-pointer text-center group relative"><div class="w-12 h-12 mx-auto bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-3 group-hover:bg-red-600 group-hover:text-white transition"><i class="fas fa-exclamation-triangle text-xl"></i></div><h3 class="font-bold text-sm text-gray-700" data-i18n="cat_report">Aduan Rakyat</h3></div>
+                <div id="cat-Temujanji" onclick="startForm('Temujanji')" class="card card-hover p-6 cursor-pointer text-center group relative"><div class="w-12 h-12 mx-auto bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-3 group-hover:bg-blue-600 group-hover:text-white transition"><i class="fas fa-calendar-check text-xl"></i></div><h3 class="font-bold text-sm text-gray-700" data-i18n="cat_appoint">Temujanji</h3></div>
+                <div id="cat-Maklum Balas" onclick="startForm('Maklum Balas')" class="card card-hover p-6 cursor-pointer text-center group relative"><div class="w-12 h-12 mx-auto bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mb-3 group-hover:bg-yellow-600 group-hover:text-white transition"><i class="fas fa-lightbulb text-xl"></i></div><h3 class="font-bold text-sm text-gray-700" data-i18n="cat_idea">Idea / Cadangan</h3></div>
+                <div id="cat-Sukarelawan" onclick="startForm('Sukarelawan')" class="card card-hover p-6 cursor-pointer text-center group relative"><div class="w-12 h-12 mx-auto bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-3 group-hover:bg-orange-600 group-hover:text-white transition"><i class="fas fa-users text-xl"></i></div><h3 class="font-bold text-sm text-gray-700" data-i18n="cat_volunteer">Sukarelawan</h3></div>
+            </div>
+        </div>
+        <!-- VIEW: EDIT PROFILE -->
+        <div id="view-profile" class="view-section hidden pb-10">
+            <div class="card p-6 md:p-8 max-w-2xl mx-auto">
+                <div class="flex items-center justify-between mb-6 border-b border-gray-200 pb-4">
+                    <div class="flex items-center">
+                        <button onclick="showView('view-dashboard')" class="text-gray-500 mr-4 hover:text-[#1A4A9A] transition bg-gray-100 p-2 rounded-full"><i class="fas fa-arrow-left"></i></button>
+                        <h2 class="text-xl font-bold text-[#1A4A9A]">Kemaskini Profil</h2>
+                    </div>
+                </div>
+                <form id="form-edit-profile" class="space-y-5" onsubmit="handleUpdateProfile(event)">
+                    <div>
+                        <label class="text-sm font-bold text-gray-700">Emel (Tidak boleh diubah)</label>
+                        <input type="email" id="edit-email" class="bg-gray-100 text-gray-500 cursor-not-allowed" readonly>
+                    </div>
+                    <div>
+                        <label class="text-sm font-bold text-gray-700">Nama Penuh</label>
+                        <input type="text" id="edit-name" required>
+                    </div>
+                    <div>
+                        <label class="text-sm font-bold text-gray-700">No. Kad Pengenalan</label>
+                        <input type="text" id="edit-ic" pattern="\d{12}" title="12 Digit tanpa sempang" required>
+                    </div>
+                    <div>
+                        <label class="text-sm font-bold text-gray-700">No. Telefon</label>
+                        <input type="tel" id="edit-phone" required>
+                    </div>
+                    <div>
+                        <label class="text-sm font-bold text-gray-700">Alamat</label>
+                        <textarea id="edit-address" rows="3" class="w-full border p-2 rounded"></textarea>
+                    </div>
+                    <div class="pt-4 flex justify-end gap-3">
+                        <button type="button" onclick="showView('view-dashboard')" class="px-6 py-2 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200 font-bold">Batal</button>
+                        <button type="submit" class="btn-primary px-6 py-2 text-sm font-bold">Simpan Perubahan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- VIEW: MEMBER HISTORY -->
+        <div id="view-history" class="view-section hidden">
+            <div class="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                <div class="flex items-center">
+                    <button onclick="showView('view-dashboard')" class="text-gray-500 mr-4 hover:text-[#1A4A9A] transition bg-gray-100 p-2 rounded-full"><i class="fas fa-arrow-left"></i></button>
+                    <h2 class="text-xl font-bold text-[#1A4A9A]">Sejarah Aduan Saya</h2>
+                </div>
+            </div>
+            <div id="history-list" class="space-y-4">
+                 <p class="text-center text-gray-500 py-10">Memuatkan data...</p>
+            </div>
+        </div>
+        <!-- VIEW 3: DYNAMIC FORM -->
+        <div id="view-form" class="view-section hidden pb-10">
+            <div class="card p-6 md:p-8">
+                <div class="flex items-center justify-between mb-8 border-b border-gray-200 pb-4">
+                    <div class="flex items-center">
+                        <button onclick="showView('view-dashboard')" class="text-gray-500 mr-4 hover:text-[#1A4A9A] transition bg-gray-100 p-2 rounded-full"><i class="fas fa-arrow-left"></i></button>
+                        <div>
+                             <h2 class="text-xl font-bold text-[#1A4A9A]" data-i18n="form_header">Borang Permohonan</h2>
+                             <p id="form-title" class="text-sm text-gray-500 font-medium uppercase tracking-wide mt-1">CATEGORY</p>
+                        </div>
+                    </div>
+                </div>
+                <form id="submissionForm" onsubmit="handleFormSubmit(event)" class="space-y-6 max-w-3xl mx-auto">
+                    <div class="bg-blue-50/50 p-4 rounded-lg border border-blue-100">
+                        <h3 class="text-[#1A4A9A] text-sm font-bold uppercase border-b border-blue-200 pb-2 mb-4"><i class="fas fa-user mr-2"></i><span data-i18n="form_section_a">A. Maklumat Asas</span></h3>
+                        <div class="mb-4"><label data-i18n="form_name">Nama Penuh</label><input type="text" name="nama" required class="focus:ring-2 focus:ring-blue-200"></div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                            <div><label data-i18n="form_ic">No. Kad Pengenalan</label><input type="text" name="ic" id="input-ic" data-i18n-placeholder="placeholder_ic" placeholder="Contoh: 901236129856" pattern="\d{12}" title="Sila masukkan 12 digit tanpa sempang" required></div>
+                            <div><label data-i18n="form_phone">No. Telefon</label><input type="tel" name="phone" data-i18n-placeholder="placeholder_phone" placeholder="Contoh: 0123456789" required></div>
+                        </div>
+                        <div class="mb-4"><label data-i18n="form_email">Email (Pilihan)</label><input type="email" name="email"></div>
+                        <div><label data-i18n="form_address">Alamat / Lokasi</label><textarea name="address" required rows="2"></textarea></div>
+                    </div>
+                    <div id="dynamic-fields" class="bg-gray-50/50 p-4 rounded-lg border border-gray-200"></div>
+                    <label class="flex items-start gap-2 text-xs text-gray-600 leading-snug px-1">
+                        <input type="checkbox" id="form-consent" required>
+                        <span>Saya faham data peribadi (termasuk No. IC) yang saya berikan akan digunakan untuk memproses permohonan/aduan ini sahaja. <button type="button" onclick="openPrivacyModal()" class="text-blue-600 underline font-semibold">Baca Dasar Privasi.</button></span>
+                    </label>
+                    <div class="pt-4 flex justify-end">
+                        <button type="submit" class="btn-primary px-8 py-3 flex items-center space-x-2 text-sm shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                            <span data-i18n="btn_submit">Hantar Borang</span>
+                            <i class="fas fa-paper-plane ml-2"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- VIEW 4: SUCCESS OUTPUT -->
+        <div id="view-success" class="view-section hidden text-center space-y-8 pt-10 pb-10">
+            <div class="card p-10 max-w-lg mx-auto shadow-lg">
+                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6"><i class="fas fa-check text-green-600 text-4xl"></i></div>
+                <h2 class="text-2xl font-bold text-gray-800" data-i18n="success_title">Berjaya Dihantar!</h2>
+                <p class="text-gray-600 mt-2" data-i18n="success_subtitle">Maklumat anda telah selamat direkodkan ke dalam pangkalan data.</p>
+                <div class="bg-gray-50 p-6 rounded-lg border border-gray-200 mt-8">
+                    <p class="text-xs text-gray-500 uppercase tracking-widest font-bold mb-2" data-i18n="ref_no">Nombor Rujukan</p>
+                    <div class="text-3xl font-mono font-bold text-[#1A4A9A] tracking-wider" id="output-refNo">----------</div>
+                    <p id="guest-warning" class="text-xs text-red-500 mt-3 font-bold hidden">PERHATIAN: Sila salin nombor ini. Sebagai Tetamu, ini adalah satu-satunya cara untuk semak status.</p>
+                    <p id="member-note" class="text-xs text-blue-500 mt-3 hidden">Direkodkan dalam sejarah akaun anda.</p>
+                </div>
+                <div class="mt-6"><span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800"><span class="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span><span data-i18n="status_label">Status:</span> <span class="ml-1" data-i18n="status_pending">DALAM SEMAKAN</span></span></div>
+                <div class="pt-8"><button onclick="showView('view-dashboard')" class="btn-outline px-6 py-2">Kembali ke Dashboard</button></div>
+            </div>
+        </div>
+        <!-- VIEW 5: CHECK STATUS -->
+        <div id="view-status" class="view-section hidden">
+            <div class="card max-w-lg mx-auto p-8 relative">
+                <button onclick="showView('view-home')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+                <div class="text-center mb-8">
+                    <div class="w-12 h-12 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-search text-xl"></i></div>
+                    <h2 class="text-2xl font-bold text-gray-800" data-i18n="status_title">Semakan Status</h2>
+                    <p class="text-gray-500 text-sm" data-i18n="status_desc">Masukkan nombor rujukan atau nombor telefon anda</p>
+                </div>
+                <div class="space-y-4">
+                    <div><label class="sr-only" data-i18n="ref_no">Nombor Rujukan / Telefon</label><input type="text" id="check-refNo" data-i18n-placeholder="placeholder_ref" placeholder="Contoh: 5565121225 atau 0123456789" class="text-center text-lg font-mono uppercase tracking-widest border-2 focus:border-teal-500 py-3"></div>
+                    <button onclick="checkStatus()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-md shadow transition"><span data-i18n="btn_check">Semak Sekarang</span></button>
+                </div>
+                <div id="status-result" class="mt-8 hidden border-t border-gray-100 pt-6">
+                    <div id="status-result-list" class="space-y-4"></div>
+                </div>
+            </div>
+        </div>
+        <!-- VIEW: CONTACT US -->
+        <div id="view-contact" class="view-section hidden">
+            <div class="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                <div>
+                    <h2 class="text-xl font-bold text-[#1A4A9A]">Hubungi Kami</h2>
+                    <p class="text-xs text-gray-500">Saluran Komunikasi Rasmi</p>
+                </div>
+                <button onclick="showView('view-home')" class="text-gray-400 hover:text-red-500 transition px-2"><i class="fas fa-times fa-lg"></i></button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                 <a href="#" data-brand-href="mailto" class="card card-hover p-8 flex flex-col items-center justify-center text-center group border-t-4 border-red-500">
+                    <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition"><i class="fas fa-envelope text-2xl"></i></div>
+                    <h3 class="font-bold text-lg text-gray-800 mb-2">Emel Rasmi</h3>
+                    <p class="text-sm text-gray-600 font-medium break-all" data-brand="email"></p>
+                </a>
+                <a href="#" data-brand-href="wa" target="_blank" rel="noopener noreferrer" class="card card-hover p-8 flex flex-col items-center justify-center text-center group border-t-4 border-green-500">
+                    <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition"><i class="fab fa-whatsapp text-3xl"></i></div>
+                    <h3 class="font-bold text-lg text-gray-800 mb-2">WhatsApp</h3>
+                    <p class="text-sm text-gray-600 font-medium" data-brand="phoneDisplay"></p>
+                </a>
+                <a href="#" data-brand-href="tel" class="card card-hover p-8 flex flex-col items-center justify-center text-center group border-t-4 border-blue-500">
+                    <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition"><i class="fas fa-phone-alt text-2xl"></i></div>
+                    <h3 class="font-bold text-lg text-gray-800 mb-2">Panggilan</h3>
+                    <p class="text-sm text-gray-600 font-medium" data-brand="phoneDisplay"></p>
+                </a>
+            </div>
+        </div>
+        <!-- VIEW: GOV INFO -->
+        <div id="view-gov-info" class="view-section hidden">
+            <div class="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                <div>
+                    <h2 class="text-xl font-bold text-[#1A4A9A]">Info Kerajaan & Bantuan</h2>
+                    <p class="text-xs text-gray-500">Maklumat terkini biasiswa, pendidikan dan inisiatif.</p>
+                </div>
+                <button onclick="showView('view-home')" class="text-gray-400 hover:text-red-500 transition px-2"><i class="fas fa-times fa-lg"></i></button>
+            </div>
+            <div id="gov-info-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <p class="text-center col-span-3 text-gray-500">Tiada maklumat semasa.</p>
+            </div>
+        </div>
+    </main>
+    <footer class="mt-12 bg-gray-800 text-gray-400 py-6 text-center text-xs relative z-10">
+        <div class="container mx-auto px-4 relative">
+            <p class="font-bold text-white mb-2 tracking-wide">SISTEM <span data-brand="name">PORTAL</span></p>
+            <p>&copy; <span data-brand="year">2025</span> <span data-brand="orgName"></span>. <span data-i18n="footer_rights">Hak Cipta Terpelihara.</span></p>
+            <div class="mt-4 space-x-4">
+                <a href="javascript:void(0)" onclick="openPrivacyModal()" class="hover:text-white transition" data-i18n="footer_privacy">Dasar Privasi</a>
+                <a href="#" class="hover:text-white transition" data-i18n="footer_terms">Terma & Syarat</a>
+                <a href="#" class="hover:text-white transition" data-i18n="footer_sitemap">Peta Laman</a>
+            </div>
+        </div>
+    </footer>
+    <!-- JAVASCRIPT LOGIC -->
+    <script>if (window.applyBrand) applyBrand((window.KARADI_BRAND || {}).tagline);</script>
+    <script>
+        // --- GOOGLE APPS SCRIPT URL ---
+        // URL Web App & jenama dibaca dari config.js
+        const APPS_SCRIPT_URL = (window.KARADI_CONFIG && window.KARADI_CONFIG.APPS_SCRIPT_URL) || "URL_APPSCRIPT_ANDA_DI_SINI";
+        const BRAND = window.KARADI_BRAND || {};
+
+        let currentLang = 'ms';
+        let currentUser = null; // Firebase User (rakyat)
+        let userProfile = null; // Firestore profile
+        let currentHistoryData = [];
+
+        const translations = {
+            'ms': {
+                'loading_text': 'Memuatkan Sistem...',
+                'loading_submit': 'Sedang Menghantar...',
+                'loading_check': 'Sedang Semak Data...',
+                'tag_official': 'Portal Rasmi',
+                'hero_title': 'Selamat Datang ke {{name}}',
+                'hero_subtitle': 'Sistem Interaksi Digital Komuniti',
+                'action_enter': 'Masuk Sistem',
+                'action_enter_desc': 'Aduan, Permohonan & Temujanji',
+                'action_check': 'Semak Status',
+                'action_check_desc': 'Jejak permohonan anda',
+                'action_info': 'Info Kerajaan',
+                'action_info_desc': 'Biasiswa, Bantuan & Info Semasa',
+                'action_contact': 'Hubungi Kami',
+                'action_contact_desc': 'Tanya khabar & aduan terus',
+                'coming_soon': 'Akan Datang',
+                'quick_time': 'Waktu Operasi',
+                'quick_time_desc': 'Isnin - Jumaat: 8:00 PG - 5:00 PTG',
+                'quick_loc': 'Lokasi Utama',
+                'quick_loc_desc': '{{office}}',
+                'select_service_title': 'Pilih Kategori Perkhidmatan',
+                'select_service_desc': 'Sila pilih jenis perkhidmatan yang diperlukan',
+                'cat_invite': 'Jemputan Rasmi',
+                'cat_aid': 'Mohon Bantuan',
+                'cat_report': 'Aduan Rakyat',
+                'cat_appoint': 'Temujanji',
+                'cat_idea': 'Idea / Cadangan',
+                'cat_volunteer': 'Sukarelawan',
+                'form_header': 'Borang Permohonan',
+                'form_section_a': 'A. Maklumat Asas',
+                'form_name': 'Nama Penuh',
+                'form_ic': 'No. Kad Pengenalan',
+                'form_phone': 'No. Telefon',
+                'form_email': 'Email (Pilihan)',
+                'form_address': 'Alamat / Lokasi',
+                'placeholder_ic': 'Contoh: 940409085565',
+                'placeholder_phone': 'Contoh: 0123456789',
+                'placeholder_ref': 'Contoh: 5565121225 atau 0123456789',
+                'placeholder_id': 'ID Pengguna',
+                'placeholder_pass': 'Kata Laluan',
+                'btn_submit': 'Hantar Borang',
+                'success_title': 'Berjaya Dihantar!',
+                'success_subtitle': 'Maklumat anda telah selamat direkodkan.',
+                'ref_no': 'Nombor Rujukan',
+                'success_note': 'Sila simpan nombor ini untuk tujuan semakan masa hadapan.',
+                'status_label': 'Status:',
+                'status_pending': 'DALAM SEMAKAN',
+                'btn_home': 'Kembali ke Utama',
+                'status_title': 'Semakan Status',
+                'status_desc': 'Masukkan nombor rujukan atau nombor telefon anda',
+                'btn_check': 'Semak Sekarang',
+                'res_category': 'Kategori:',
+                'res_date': 'Tarikh Terima:',
+                'admin_login_title': 'Log Masuk Pentadbir',
+                'btn_login': 'LOG MASUK',
+                'btn_cancel': 'BATAL',
+                'footer_rights': 'Hak Cipta Terpelihara.',
+                'footer_privacy': 'Dasar Privasi',
+                'footer_terms': 'Terma & Syarat',
+                'footer_sitemap': 'Peta Laman'
+            },
+            'en': {
+                'loading_text': 'Loading System...',
+                'loading_submit': 'Submitting...',
+                'loading_check': 'Checking Data...',
+                'tag_official': 'Official Portal',
+                'hero_title': 'Welcome to {{name}}',
+                'hero_subtitle': 'Community Digital Interaction System',
+                'action_enter': 'Enter System',
+                'action_enter_desc': 'Reports, Applications & Appointments',
+                'action_check': 'Check Status',
+                'action_check_desc': 'Track your application',
+                'action_info': 'Gov Info',
+                'action_info_desc': 'Scholarships, Aid & News',
+                'action_contact': 'Contact Us',
+                'action_contact_desc': 'Enquiries & direct complaints',
+                'coming_soon': 'Coming Soon',
+                'quick_time': 'Operating Hours',
+                'quick_time_desc': 'Mon - Fri: 8:00 AM - 5:00 PM',
+                'quick_loc': 'Main Location',
+                'quick_loc_desc': '{{office}}',
+                'select_service_title': 'Select Service Category',
+                'select_service_desc': 'Please select the type of service required',
+                'cat_invite': 'Official Invitation',
+                'cat_aid': 'Request Aid',
+                'cat_report': 'Public Complaint',
+                'cat_appoint': 'Appointment',
+                'cat_idea': 'Ideas / Feedback',
+                'cat_volunteer': 'Volunteer',
+                'form_header': 'Application Form',
+                'form_section_a': 'A. Basic Information',
+                'form_name': 'Full Name',
+                'form_ic': 'IC Number',
+                'form_phone': 'Phone Number',
+                'form_email': 'Email (Optional)',
+                'form_address': 'Address / Location',
+                'placeholder_ic': 'Example: 940409085565',
+                'placeholder_phone': 'Example: 0123456789',
+                'placeholder_ref': 'Example: 5565121225 or 0123456789',
+                'placeholder_id': 'User ID',
+                'placeholder_pass': 'Password',
+                'btn_submit': 'Submit Form',
+                'success_title': 'Submission Successful!',
+                'success_subtitle': 'Your information has been securely recorded.',
+                'ref_no': 'Reference Number',
+                'success_note': 'Please keep this number for future reference.',
+                'status_label': 'Status:',
+                'status_pending': 'IN REVIEW',
+                'btn_home': 'Back to Home',
+                'status_title': 'Check Status',
+                'status_desc': 'Enter your reference number or phone number',
+                'btn_check': 'Check Now',
+                'res_category': 'Category:',
+                'res_date': 'Date Received:',
+                'admin_login_title': 'Admin Login',
+                'btn_login': 'LOGIN',
+                'btn_cancel': 'CANCEL',
+                'footer_rights': 'All Rights Reserved.',
+                'footer_privacy': 'Privacy Policy',
+                'footer_terms': 'Terms & Conditions',
+                'footer_sitemap': 'Sitemap'
+            }
+        };
+
+        // --- Jenama dalam terjemahan (nama sistem & label pejabat dari config.js) ---
+        function applyBrandToTranslations() {
+            Object.keys(translations).forEach(lang => {
+                const t = translations[lang];
+                Object.keys(t).forEach(k => {
+                    if (typeof t[k] === "string") t[k] = t[k].replace(/\{\{name\}\}/g, BRAND.name || "Portal").replace(/\{\{office\}\}/g, BRAND.officeLabel || "");
+                });
+            });
+            document.querySelectorAll("[data-i18n]").forEach(el => {
+                const key = el.getAttribute("data-i18n");
+                if (translations[currentLang][key]) el.innerText = translations[currentLang][key];
+            });
+        }
+        // --- XSS-safe render helpers ---
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = (str === null || str === undefined) ? '' : String(str);
+            return div.innerHTML;
+        }
+        function safeLinkify(str) {
+            const escaped = escapeHtml(str);
+            const urlRegex = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+            return escaped.replace(urlRegex, (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-bold hover:underline break-all">${url}</a>`);
+        }
+        // --- LOADER ---
+        function showLoader(textKey = 'loading_text', duration = 0, callback) {
+            const loader = document.getElementById('global-loader');
+            const textEl = document.getElementById('loader-text');
+            textEl.innerText = translations[currentLang][textKey];
+            loader.classList.remove('opacity-0', 'pointer-events-none');
+            if (duration > 0) {
+                setTimeout(() => { hideLoader(); if (callback) callback(); }, duration);
+            } else if (callback) { callback(); }
+        }
+        function hideLoader() {
+            document.getElementById('global-loader').classList.add('opacity-0', 'pointer-events-none');
+        }
+        // --- NOTIFICATIONS ---
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            let bgClass = 'bg-white', borderClass = 'border-l-4 border-blue-600', icon = 'fa-info-circle', textColor = 'text-blue-600';
+            if(type === 'error') { borderClass = 'border-l-4 border-red-500'; icon = 'fa-exclamation-circle'; textColor = 'text-red-500'; }
+            if(type === 'success') { borderClass = 'border-l-4 border-green-500'; icon = 'fa-check-circle'; textColor = 'text-green-500'; }
+            if(type === 'warning') { borderClass = 'border-l-4 border-yellow-500'; icon = 'fa-exclamation-triangle'; textColor = 'text-yellow-500'; }
+            toast.className = `toast flex items-center w-80 p-4 rounded shadow-lg ${bgClass} ${borderClass} pointer-events-auto border border-gray-100`;
+            toast.innerHTML = `<i class="fas ${icon} mr-3 ${textColor} text-xl"></i><div class="text-sm font-medium text-gray-700">${escapeHtml(message)}</div>`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.add('hiding'); toast.addEventListener('animationend', () => toast.remove()); }, 3000);
+        }
+        function toggleLanguage() {
+            currentLang = currentLang === 'ms' ? 'en' : 'ms';
+            document.getElementById('lang-display').innerText = currentLang.toUpperCase();
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if(translations[currentLang][key]) el.innerText = translations[currentLang][key];
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if(translations[currentLang][key]) el.placeholder = translations[currentLang][key];
+            });
+            updateHomeUI();
+            if(!document.getElementById('view-dashboard').classList.contains('hidden')) updateDashboardUI();
+        }
+        // --- PRIVACY MODAL ---
+        window.openPrivacyModal = function() { document.getElementById('modal-privacy-policy').classList.remove('hidden'); }
+        window.closePrivacyModal = function() { document.getElementById('modal-privacy-policy').classList.add('hidden'); }
+        // --- AUTH RAKYAT (FIREBASE) ---
+        function toggleAuthMode(mode) {
+            const loginForm = document.getElementById('form-login');
+            const signupForm = document.getElementById('form-signup');
+            const btnLogin = document.getElementById('tab-login');
+            const btnSignup = document.getElementById('tab-signup');
+            document.getElementById('form-forgot-pass').classList.add('hidden');
+            if (mode === 'login') {
+                loginForm.classList.remove('hidden'); signupForm.classList.add('hidden');
+                btnLogin.classList.add('bg-white', 'text-[#1A4A9A]', 'shadow-sm'); btnLogin.classList.remove('text-gray-500');
+                btnSignup.classList.remove('bg-white', 'text-[#1A4A9A]', 'shadow-sm'); btnSignup.classList.add('text-gray-500');
+            } else {
+                loginForm.classList.add('hidden'); signupForm.classList.remove('hidden');
+                btnSignup.classList.add('bg-white', 'text-[#1A4A9A]', 'shadow-sm'); btnSignup.classList.remove('text-gray-500');
+                btnLogin.classList.remove('bg-white', 'text-[#1A4A9A]', 'shadow-sm'); btnLogin.classList.add('text-gray-500');
+            }
+        }
+        function showForgotPassword() {
+            document.getElementById('form-login').classList.add('hidden');
+            document.getElementById('form-forgot-pass').classList.remove('hidden');
+        }
+        function hideForgotPassword() {
+            document.getElementById('form-forgot-pass').classList.add('hidden');
+            document.getElementById('form-login').classList.remove('hidden');
+        }
+        async function handleForgotPassword(e) {
+            e.preventDefault();
+            const email = document.getElementById('forgot-email').value;
+            showLoader('loading_text', 0);
+            try {
+                await window.sendPasswordResetEmail(window.auth, email);
+                hideLoader(); hideForgotPassword();
+                showNotification("Pautan reset kata laluan telah dihantar ke emel anda.", "success");
+            } catch (error) {
+                hideLoader();
+                let msg = "Ralat reset kata laluan.";
+                if(error.code === 'auth/user-not-found') msg = "Emel tidak dijumpai.";
+                if(error.code === 'auth/invalid-email') msg = "Format emel tidak sah.";
+                showNotification(msg, "error");
+            }
+        }
+        async function handleLogin(e) {
+            e.preventDefault();
+            if(!window.firebaseLoaded) { showNotification("Ralat Konfigurasi Firebase", "error"); return; }
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
+            showLoader('loading_text', 0);
+            try {
+                await window.signInWithEmailAndPassword(window.auth, email, pass);
+            } catch (error) {
+                hideLoader();
+                let msg = "Log masuk gagal.";
+                if(error.code === 'auth/invalid-credential') msg = "Emel atau kata laluan salah.";
+                showNotification(msg, "error");
+            }
+        }
+        async function handleSignup(e) {
+            e.preventDefault();
+            if(!window.firebaseLoaded) { showNotification("Ralat Konfigurasi Firebase", "error"); return; }
+            const consentBox = document.getElementById('signup-consent');
+            if (consentBox && !consentBox.checked) { showNotification("Sila bersetuju dengan Dasar Privasi sebelum mendaftar.", "warning"); return; }
+            const name = document.getElementById('signup-name').value;
+            const ic = document.getElementById('signup-ic').value;
+            const phone = document.getElementById('signup-phone').value;
+            const email = document.getElementById('signup-email').value;
+            const pass = document.getElementById('signup-pass').value;
+            showLoader('loading_text', 0);
+            try {
+                const userCredential = await window.createUserWithEmailAndPassword(window.auth, email, pass);
+                const user = userCredential.user;
+                await window.setDoc(window.doc(window.db, "users", user.uid), {
+                    nama: name, email: email, ic: ic, phone: phone, uid: user.uid, address: "", createdAt: new Date()
+                });
+            } catch (error) {
+                hideLoader();
+                let msg = "Pendaftaran gagal.";
+                if(error.code === 'auth/email-already-in-use') msg = "Emel ini telah didaftarkan.";
+                if(error.code === 'auth/weak-password') msg = "Kata laluan terlalu lemah.";
+                showNotification(msg, "error");
+            }
+        }
+        function handleGuestAccess() {
+            currentUser = null; userProfile = null;
+            updateDashboardUI(); showView('view-dashboard');
+        }
+        function handleLogout() {
+            if (currentUser) { window.signOut(window.auth); currentUser = null; userProfile = null; }
+            showView('view-home');
+        }
+        // --- PROFILE EDIT ---
+        function openProfile() {
+            if (!currentUser || !userProfile) return;
+            document.getElementById('edit-email').value = userProfile.email || '';
+            document.getElementById('edit-name').value = userProfile.nama || '';
+            document.getElementById('edit-ic').value = userProfile.ic || '';
+            document.getElementById('edit-phone').value = userProfile.phone || '';
+            document.getElementById('edit-address').value = userProfile.address || '';
+            showView('view-profile');
+        }
+        async function handleUpdateProfile(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+            const newName = document.getElementById('edit-name').value;
+            const newIc = document.getElementById('edit-ic').value;
+            const newPhone = document.getElementById('edit-phone').value;
+            const newAddress = document.getElementById('edit-address').value;
+            showLoader('loading_text', 0);
+            try {
+                const userRef = window.doc(window.db, "users", currentUser.uid);
+                await window.updateDoc(userRef, { nama: newName, ic: newIc, phone: newPhone, address: newAddress });
+                userProfile.nama = newName; userProfile.ic = newIc; userProfile.phone = newPhone; userProfile.address = newAddress;
+                hideLoader();
+                showNotification("Profil berjaya dikemaskini!", "success");
+                showView('view-dashboard');
+            } catch (error) {
+                hideLoader();
+                console.error("Profile update error:", error);
+                showNotification("Gagal kemaskini profil.", "error");
+            }
+        }
+        // --- MODULE CONFIG ---
+        const categoryConfig = {
+            'Jemputan': { fields: `<h3 class="text-[#1A4A9A] text-sm font-bold uppercase border-b border-blue-200 pb-2 mb-4 mt-6"><i class="fas fa-envelope mr-2"></i>B. Butiran Jemputan</h3><div class="mb-4"><label>Nama Penganjur</label><input type="text" name="detail_1" required></div><div class="mb-4"><label>Nama Program</label><input type="text" name="detail_2" required></div><div class="grid grid-cols-2 gap-4 mb-4"><div><label>Tarikh & Masa</label><input type="datetime-local" name="date_time" required></div><div><label>Jenis Jemputan</label><select name="option_select"><option>YB Hadir</option><option>Wakil</option><option>Perasmian</option></select></div></div><div class="mb-4"><label>Lokasi Program</label><input type="text" name="location" required></div><div class="mb-4"><label>Muat Naik Surat Jemputan (PDF/Imej)</label><input type="file" multiple accept=".pdf,image/*" class="border p-2 rounded bg-white w-full"><p class="text-xs text-gray-400 mt-1">Boleh muat naik lebih dari satu fail.</p></div>` },
+            'Permohonan': { fields: `<h3 class="text-[#1A4A9A] text-sm font-bold uppercase border-b border-blue-200 pb-2 mb-4 mt-6"><i class="fas fa-file-invoice mr-2"></i>B. Butiran Permohonan</h3><div class="mb-4"><label>Jenis Permohonan</label><select name="option_select"><option>Bantuan Kewangan Kecil</option><option>Sumbangan Barangan</option><option>Surat Sokongan</option><option>Bantuan Kecemasan</option></select></div><div class="mb-4"><label>Amaun / Senarai Barang</label><input type="text" name="detail_1" placeholder="RM xxx atau Senarai"></div><div class="mb-4"><label>Tujuan & Justifikasi</label><textarea name="detail_2" rows="3"></textarea></div><div class="mb-4"><label>Dokumen Sokongan</label><input type="file" multiple class="border p-2 rounded bg-white w-full"><p class="text-xs text-gray-400 mt-1">Sertakan salinan IC, Bil Utiliti atau surat berkaitan.</p></div>` },
+            'Aduan': { fields: `<h3 class="text-[#1A4A9A] text-sm font-bold uppercase border-b border-blue-200 pb-2 mb-4 mt-6"><i class="fas fa-exclamation-circle mr-2"></i>B. Butiran Aduan</h3><div class="mb-4"><label>Kategori Aduan</label><select name="option_select"><option>Infrastruktur (Jalan/Lampu)</option><option>Kebersihan / Sampah</option><option>Keselamatan Komuniti</option><option>Banjir / Parit</option><option>Sosial</option><option>Lain-lain</option></select></div><div class="mb-4"><label>Lokasi Kejadian</label><input type="text" name="location" placeholder="Alamat penuh lokasi kejadian" required></div><div class="mb-4"><label>Perincian Aduan</label><textarea name="detail_1" rows="4" placeholder="Sila terangkan aduan anda secara terperinci..." required></textarea></div><div class="mb-4"><label>Tahap Desakan</label><select name="urgency"><option>Biasa</option><option>Sederhana</option><option>Kritikal</option></select></div><div class="mb-4"><label>Bukti Gambar</label><input type="file" multiple accept="image/*" class="border p-2 rounded bg-white w-full"></div>` },
+            'Temujanji': { fields: `<h3 class="text-[#1A4A9A] text-sm font-bold uppercase border-b border-blue-200 pb-2 mb-4 mt-6"><i class="fas fa-calendar-alt mr-2"></i>B. Butiran Temujanji</h3><div class="mb-4"><label>Tujuan Pertemuan</label><input type="text" name="detail_1" required></div><div class="grid grid-cols-2 gap-4 mb-4"><div><label>Tarikh Pilihan</label><input type="date" name="date_pref" required></div><div><label>Sesi Masa</label><select name="time_slot"><option>Pagi (9:00 - 12:00)</option><option>Petang (14:00 - 17:00)</option></select></div></div>` },
+            'Maklum Balas': { fields: `<h3 class="text-[#1A4A9A] text-sm font-bold uppercase border-b border-blue-200 pb-2 mb-4 mt-6">B. Butiran Cadangan</h3><div class="mb-4"><label>Tajuk Cadangan</label><input type="text" name="option_select"></div><div class="mb-4"><label>Huraian & Kesan Kepada Komuniti</label><textarea name="detail_1" rows="4"></textarea></div><div class="mb-4"><label>Lampiran (Gambar/PDF)</label><input type="file" multiple accept=".pdf,image/*" class="border p-2 rounded bg-white w-full"></div>` },
+            'Sukarelawan': { fields: `<h3 class="text-[#1A4A9A] text-sm font-bold uppercase border-b border-blue-200 pb-2 mb-4 mt-6">B. Profil Sukarelawan</h3><div class="mb-4"><label>Minat Utama</label><select name="option_select"><option>Gotong Royong</option><option>Bantuan Bencana</option><option>Pengurusan Acara</option><option>Pendidikan / Tuisyen</option></select></div><div class="mb-4"><label>Kemahiran Khas</label><input type="text" name="detail_1" placeholder="Contoh: Memasak, Memandu Lori, Perubatan"></div><div class="mb-4"><label>Ketersediaan</label><input type="text" name="detail_2" placeholder="Hujung Minggu Sahaja / Bila-bila"></div>` }
+        };
+        // --- INIT DATA ---
+        // Kandungan laman (slide, pengumuman, info pejabat, info kerajaan, maintenance,
+        // suis tutup/buka borang) dibaca dari content/site.json — diurus melalui
+        // Sveltia CMS di /cms/. Tiada lagi panel admin dalam halaman ini.
+        const CATEGORY_KEY_MAP = { 'Jemputan': 'jemputan', 'Permohonan': 'permohonan', 'Aduan': 'aduan', 'Temujanji': 'temujanji', 'Maklum Balas': 'maklum_balas', 'Sukarelawan': 'sukarelawan' };
+        const CONTENT_KEYS = ['app_slides', 'app_memos', 'app_info', 'app_gov_info', 'app_maintenance', 'app_category_status'];
+        const contentText = (x) => typeof x === 'string' ? x : ((x && (x.image || x.text || x.url || x.value)) || '');
+        function applySiteContent(d) {
+            if (!d || typeof d !== 'object') return;
+            const slides = (Array.isArray(d.slides) ? d.slides : []).map(contentText).filter(Boolean);
+            if (slides.length) localStorage.setItem('app_slides', JSON.stringify(slides));
+            const memos = (Array.isArray(d.memos) ? d.memos : []).map(contentText).filter(Boolean);
+            localStorage.setItem('app_memos', JSON.stringify(memos));
+            if (d.info && typeof d.info === 'object') {
+                localStorage.setItem('app_info', JSON.stringify({ hours: d.info.hours || '', location: d.info.location || '', mapLink: d.info.map_link || d.info.mapLink || '' }));
+            }
+            const gov = (Array.isArray(d.gov_info) ? d.gov_info : []).filter(g => g && g.title).map(g => ({ title: g.title, img: g.image || g.img || '', desc: g.desc || '' }));
+            localStorage.setItem('app_gov_info', JSON.stringify(gov));
+            localStorage.setItem('app_maintenance', d.maintenance === true ? 'true' : 'false');
+            const cs = (d.category_status && typeof d.category_status === 'object') ? d.category_status : {};
+            const status = {};
+            Object.keys(CATEGORY_KEY_MAP).forEach(cat => { status[cat] = cs[CATEGORY_KEY_MAP[cat]] !== false; });
+            localStorage.setItem('app_category_status', JSON.stringify(status));
+        }
+        async function fetchGlobalConfig() {
+            try {
+                const before = CONTENT_KEYS.map(k => localStorage.getItem(k)).join('|');
+                const response = await fetch('content/site.json', { cache: 'no-cache' });
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                applySiteContent(await response.json());
+                const changed = before !== CONTENT_KEYS.map(k => localStorage.getItem(k)).join('|');
+                if (!changed && fetchGlobalConfig.done) return;
+                fetchGlobalConfig.done = true;
+                if (document.getElementById('view-home').classList.contains('hidden') === false) {
+                    updateHomeUI();
+                    if (typeof initSlider === "function") initSlider();
+                    if (typeof loadMemosTicker === "function") loadMemosTicker();
+                    if (typeof updateInfoUI === "function") updateInfoUI();
+                }
+                if (!document.getElementById('view-dashboard').classList.contains('hidden')) updateDashboardUI();
+            } catch (e) { console.warn("Background content fetch failed (non-critical):", e); }
+        }
+        // Init localStorage if missing
+        if (!localStorage.getItem('app_submissions')) localStorage.setItem('app_submissions', JSON.stringify([]));
+        if (!localStorage.getItem('app_slides')) localStorage.setItem('app_slides', JSON.stringify(["assets/placeholder-slide.svg"]));
+        if (!localStorage.getItem('app_memos')) localStorage.setItem('app_memos', JSON.stringify([]));
+        if (!localStorage.getItem('app_info')) localStorage.setItem('app_info', JSON.stringify({ hours: "", location: BRAND.officeLabel || "", mapLink: "" }));
+        if (!localStorage.getItem('app_gov_info')) localStorage.setItem('app_gov_info', JSON.stringify([]));
+        if (localStorage.getItem('app_maintenance') === null) localStorage.setItem('app_maintenance', 'false');
+        if (!localStorage.getItem('app_category_status')) {
+            const defaultStatus = { 'Jemputan': true, 'Permohonan': true, 'Aduan': true, 'Temujanji': true, 'Maklum Balas': true, 'Sukarelawan': true };
+            localStorage.setItem('app_category_status', JSON.stringify(defaultStatus));
+        }
+        // --- NAVIGATION & UI UPDATES ---
+        function hideAllViews() { document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden')); }
+        function showView(view) {
+            hideAllViews();
+            document.getElementById(view).classList.remove("hidden");
+            window.scrollTo(0, 0);
+            if (typeof updateInfoUI === "function") updateInfoUI();
+            if (typeof initSlider === "function" && view === 'view-home') initSlider();
+            if(view === 'view-home') { if (typeof loadMemosTicker === "function") loadMemosTicker(); }
+            if(view === 'view-dashboard') { if (typeof updateDashboardUI === "function") updateDashboardUI(); }
+            if(view === 'view-gov-info') { if (typeof loadGovInfoUI === "function") loadGovInfoUI(); }
+        }
+        function checkSystemAccess() {
+            const isMaintenance = localStorage.getItem('app_maintenance') === 'true';
+            if(isMaintenance) showNotification("SISTEM SEDANG DISELENGGARA.", "warning");
+            else showView('view-auth');
+        }
+        function updateHomeUI() {
+            const isMaintenance = localStorage.getItem('app_maintenance') === 'true';
+            const btn = document.getElementById('action-enter-system');
+            const icon = document.getElementById('icon-enter-system');
+            const title = document.getElementById('text-enter-system');
+            const desc = document.getElementById('desc-enter-system');
+            if(isMaintenance) {
+                btn.classList.add('opacity-75', 'bg-gray-50', 'border-t-red-500', 'cursor-not-allowed');
+                btn.classList.remove('card-hover', 'border-t-[#1A4A9A]');
+                title.innerText = "SISTEM DISELENGGARA"; title.classList.add('text-red-600');
+                desc.innerText = "Sila kembali kemudian";
+                icon.className = "w-14 h-14 mb-4 rounded-full bg-red-100 flex items-center justify-center text-red-500";
+            } else {
+                btn.classList.remove('opacity-75', 'bg-gray-50', 'border-t-red-500', 'cursor-not-allowed');
+                btn.classList.add('card-hover', 'border-t-[#1A4A9A]');
+                if(currentLang === 'ms') { title.innerText = "Masuk Sistem"; desc.innerText = "Aduan, Permohonan & Temujanji"; }
+                else { title.innerText = "Enter System"; desc.innerText = "Reports, Applications & Appointments"; }
+                title.classList.remove('text-red-600');
+                icon.className = "w-14 h-14 mb-4 rounded-full bg-blue-50 flex items-center justify-center text-[#1A4A9A] group-hover:bg-[#1A4A9A] group-hover:text-white transition duration-300";
+            }
+        }
+        function updateInfoUI() {
+            const info = JSON.parse(localStorage.getItem('app_info'));
+            if(info) {
+                document.getElementById('display-op-hours').innerText = info.hours;
+                document.getElementById('display-location').innerText = info.location;
+            }
+        }
+        function openMap() {
+            const info = JSON.parse(localStorage.getItem('app_info'));
+            const link = info && info.mapLink ? info.mapLink : "https://maps.google.com";
+            window.open(link, '_blank');
+        }
+        function updateDashboardUI() {
+            const statuses = JSON.parse(localStorage.getItem('app_category_status')) || {};
+            const cats = ['Jemputan', 'Permohonan', 'Aduan', 'Temujanji', 'Maklum Balas', 'Sukarelawan'];
+            const headerInfo = document.getElementById('user-header-info');
+            const welcomeMsg = document.getElementById('welcome-msg');
+            const historyBtn = document.getElementById('btn-my-history');
+            const editProfileBtn = document.getElementById('btn-edit-profile');
+            if (currentUser) {
+                headerInfo.innerHTML = `<i class="fas fa-user-circle mr-2"></i> ${escapeHtml(currentUser.email)}`;
+                welcomeMsg.innerText = `Selamat Datang, Ahli Berdaftar.`;
+                historyBtn.classList.remove('hidden');
+                editProfileBtn.classList.remove('hidden');
+            } else {
+                headerInfo.innerHTML = `<span class="bg-gray-700 px-2 py-0.5 rounded">MOD TETAMU</span>`;
+                welcomeMsg.innerText = "Mod Tetamu: Sejarah tidak disimpan.";
+                historyBtn.classList.add('hidden');
+                editProfileBtn.classList.add('hidden');
+            }
+            cats.forEach(cat => {
+                const el = document.getElementById(`cat-${cat}`);
+                const existingBadge = el.querySelector('.status-badge');
+                if(existingBadge) existingBadge.remove();
+                if (statuses[cat] === false) {
+                    el.classList.add('card-disabled');
+                    const badge = document.createElement('div');
+                    badge.className = "status-badge absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow";
+                    badge.innerText = currentLang === 'ms' ? "DITUTUP" : "CLOSED";
+                    el.appendChild(badge);
+                } else el.classList.remove('card-disabled');
+            });
+        }
+        // --- SLIDER & MEMO ---
+        let slideIndex = 0; let slideInterval;
+        function initSlider() {
+            const container = document.getElementById('slider-wrapper');
+            container.querySelectorAll('.slide').forEach(s => s.remove());
+            const slides = JSON.parse(localStorage.getItem('app_slides'));
+            slides.forEach((src, idx) => {
+                const div = document.createElement('div');
+                div.className = `slide ${idx === 0 ? 'active' : ''}`;
+                div.style.backgroundImage = `url('${src}')`;
+                container.insertBefore(div, container.firstChild);
+            });
+            slideIndex = 0;
+            clearInterval(slideInterval);
+            if(slides.length > 1) slideInterval = setInterval(() => { changeSlide(1); }, 6000);
+        }
+        function changeSlide(n) {
+            const slides = document.querySelectorAll('.slide');
+            if(slides.length === 0) return;
+            slides[slideIndex].classList.remove('active');
+            slideIndex += n;
+            if(slideIndex >= slides.length) slideIndex = 0;
+            if(slideIndex < 0) slideIndex = slides.length - 1;
+            slides[slideIndex].classList.add('active');
+        }
+        function loadMemosTicker() {
+            const memos = JSON.parse(localStorage.getItem('app_memos'));
+            const tickerContainer = document.getElementById('news-ticker-content');
+            let contentHTML = "";
+            if(memos.length > 0) memos.forEach(m => { contentHTML += `<span class="ticker-item"><i class="fas fa-bullhorn text-yellow-300 mr-2"></i> ${escapeHtml(m)}</span>`; });
+            else contentHTML = '<span class="ticker-item">Sistem Beroperasi Seperti Biasa.</span>';
+            tickerContainer.innerHTML = contentHTML + contentHTML + contentHTML;
+        }
+        // --- GOV INFO ---
+        function loadGovInfoUI() {
+            const list = JSON.parse(localStorage.getItem('app_gov_info')) || [];
+            const container = document.getElementById('gov-info-list');
+            if (list.length === 0) {
+                container.innerHTML = '<p class="text-center col-span-3 text-gray-500 py-10">Tiada maklumat semasa.</p>';
+                return;
+            }
+            container.innerHTML = list.map((item, i) => `
+                <div onclick="openGovInfoModal(${i})" class="card overflow-hidden group cursor-pointer hover:shadow-lg transition">
+                    <div class="h-40 bg-gray-200 relative overflow-hidden">
+                        <img src="${escapeHtml(item.img || 'assets/no-image.svg')}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.onerror=null;this.src='assets/no-image.svg'">
+                        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition duration-300 flex items-center justify-center">
+                            <i class="fas fa-expand-alt text-white opacity-0 group-hover:opacity-100 transform scale-50 group-hover:scale-100 transition duration-300 drop-shadow-md"></i>
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="font-bold text-lg text-gray-800 mb-2 truncate">${escapeHtml(item.title)}</h3>
+                        <p class="text-sm text-gray-600 line-clamp-3">${escapeHtml(item.desc)}</p>
+                        <div class="mt-3 text-xs text-blue-600 font-bold uppercase tracking-wider">Baca Lanjut <i class="fas fa-arrow-right ml-1"></i></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        window.openGovInfoModal = function(index) {
+            const list = JSON.parse(localStorage.getItem('app_gov_info')) || [];
+            const item = list[index];
+            if(!item) return;
+            document.getElementById('modal-gov-img').src = item.img || 'assets/no-image.svg';
+            document.getElementById('modal-gov-title').innerText = item.title;
+            document.getElementById('modal-gov-desc').innerHTML = safeLinkify(item.desc || "");
+            document.getElementById('modal-gov-info').classList.remove('hidden');
+        }
+        window.closeGovInfoModal = function() { document.getElementById('modal-gov-info').classList.add('hidden'); }
+        // --- HISTORY DETAIL ---
+        window.openHistoryDetail = function(index) {
+            const record = currentHistoryData[index];
+            if(!record) return;
+            document.getElementById('hist-modal-cat').innerText = record.category;
+            document.getElementById('hist-modal-ref').innerText = record.refNo;
+            document.getElementById('hist-modal-date').innerText = record.date;
+            const statusEl = document.getElementById('hist-modal-status');
+            const currentStatus = String(record.status).toUpperCase();
+            statusEl.innerText = currentStatus;
+            let statusClass = "bg-blue-100 text-blue-800 border border-blue-200";
+            if(currentStatus.includes("SELESAI") || currentStatus.includes("LULUS")) statusClass = "bg-green-100 text-green-800 border border-green-200";
+            else if (currentStatus.includes("TOLAK") || currentStatus.includes("GAGAL")) statusClass = "bg-red-100 text-red-800 border border-red-200";
+            else if (currentStatus.includes("SEMAKAN") || currentStatus.includes("BARU") || currentStatus.includes("PROSES")) statusClass = "bg-yellow-100 text-yellow-800 border border-yellow-200";
+            statusEl.className = `inline-block px-4 py-1.5 rounded-full text-sm font-bold shadow-sm ${statusClass}`;
+            const reportDiv = document.getElementById('hist-modal-report');
+            const reportTitle = document.getElementById('hist-modal-report-title');
+            const endDateEl = document.getElementById('hist-modal-end-date');
+            const linkBtn = document.getElementById('hist-modal-link');
+            // Cari lajur "Tarikh Selesai" & "Laporan Penyelesaian" ikut NAMA header
+            // (bukan index tetap) — sebab sheet "Mohon Bantuan" tiada lajur Timestamp.
+            let endDate = "-", reportLink = "";
+            if (record.headers && record.fullData) {
+                record.headers.forEach((h, i) => {
+                    const hu = String(h).toUpperCase();
+                    if (hu.includes("TARIKH SELESAI") || hu.includes("TARIKH TINDAKAN")) endDate = record.fullData[i] || "-";
+                    if (hu.includes("LAPORAN")) reportLink = record.fullData[i] || "";
+                });
+            }
+            reportDiv.classList.add('hidden'); endDateEl.classList.add('hidden'); linkBtn.classList.add('hidden');
+            let isCompleted = currentStatus.includes("SELESAI") || currentStatus.includes("LULUS");
+            let hasReport = reportLink && String(reportLink).startsWith('http');
+            if (isCompleted || hasReport) {
+                reportDiv.classList.remove('hidden');
+                if (isCompleted) {
+                    reportDiv.className = "mt-4 bg-green-50 p-4 rounded-lg border border-green-100 text-center";
+                    reportTitle.className = "text-green-700 font-bold text-sm mb-1";
+                    reportTitle.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Tindakan Selesai';
+                    if(endDate && endDate !== "-") { endDateEl.innerText = "Tarikh Selesai: " + endDate; endDateEl.classList.remove('hidden'); }
+                    linkBtn.className = "w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-sm inline-flex items-center justify-center transition shadow-md mt-3";
+                } else {
+                    reportDiv.className = "mt-4 bg-blue-50 p-4 rounded-lg border border-blue-100 text-center";
+                    reportTitle.className = "text-blue-700 font-bold text-sm mb-1";
+                    reportTitle.innerHTML = '<i class="fas fa-info-circle mr-1"></i> Maklum Balas Rasmi';
+                    endDateEl.classList.add('hidden');
+                    linkBtn.className = "w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm inline-flex items-center justify-center transition shadow-md mt-2";
+                }
+                if (hasReport) {
+                    linkBtn.href = reportLink;
+                    linkBtn.classList.remove('hidden');
+                    linkBtn.innerHTML = '<i class="fas fa-file-pdf mr-2"></i> Lihat Laporan';
+                }
+            }
+            const contentDiv = document.getElementById('hist-modal-content');
+            const attachContainer = document.getElementById('hist-modal-attachments-container');
+            const attachDiv = document.getElementById('hist-modal-attachments');
+            let detailsHtml = "", attachmentsHtml = "";
+            if(record.headers && record.fullData) {
+                const skipHeaders = ['TIMESTAMP', 'NO. RUJUKAN', 'REF NO', 'STATUS', 'UID', 'NO. KP', 'IC', 'NO. IC'];
+                record.headers.forEach((header, i) => {
+                    const hUpper = String(header).toUpperCase().trim();
+                    const val = record.fullData[i];
+                    if(!val || String(val).trim() === '') return;
+                    if(hUpper.includes("TARIKH SELESAI") || hUpper.includes("TARIKH TINDAKAN") || hUpper.includes("LAPORAN")) return;
+                    if(String(val).startsWith('http')) {
+                        attachmentsHtml += `<a href="${escapeHtml(val)}" target="_blank" rel="noopener noreferrer" class="block bg-gray-50 border p-2 rounded text-blue-600 hover:bg-blue-50 transition truncate"><i class="fas fa-paperclip mr-2"></i> ${escapeHtml(header)}</a>`;
+                    } else if (!skipHeaders.includes(hUpper)) {
+                         let label = String(header).replace(/_/g, ' ');
+                         if(hUpper.includes("PERINCIAN")) label = "Perincian";
+                         if(hUpper.includes("TARIKH")) label = "Tarikh / Masa";
+                         detailsHtml += `
+                            <div class="grid grid-cols-3 gap-2 border-b border-gray-50 pb-2 last:border-0">
+                                <div class="col-span-1 text-xs text-gray-400 font-bold uppercase pt-1">${escapeHtml(label)}</div>
+                                <div class="col-span-2 text-gray-800 font-medium">${escapeHtml(val)}</div>
+                            </div>`;
+                    }
+                });
+            }
+            if (!detailsHtml) detailsHtml = "<p class='text-gray-400 italic text-center'>Tiada butiran tambahan.</p>";
+            contentDiv.innerHTML = detailsHtml;
+            if(attachmentsHtml) { attachDiv.innerHTML = attachmentsHtml; attachContainer.classList.remove('hidden'); }
+            else { attachContainer.classList.add('hidden'); }
+            document.getElementById('modal-history-detail').classList.remove('hidden');
+        }
+        window.closeHistoryModal = function() { document.getElementById('modal-history-detail').classList.add('hidden'); }
+        window.closeSuccessPopup = function() {
+            document.getElementById('modal-success-popup').classList.add('hidden');
+            showView('view-success');
+        }
+        // --- FORM & STATUS ---
+        let currentCategory = '';
+        function startForm(category) {
+            const statuses = JSON.parse(localStorage.getItem('app_category_status')) || {};
+            if(statuses[category] === false) { showNotification(currentLang === 'ms' ? "Harap maaf, perkhidmatan ini ditutup sementara." : "Service unavailable.", "warning"); return; }
+            currentCategory = category;
+            document.getElementById('form-title').innerText = category.toUpperCase();
+            document.getElementById('dynamic-fields').innerHTML = categoryConfig[category].fields;
+            document.getElementById('submissionForm').reset();
+            if (currentUser && userProfile) {
+                const nameIn = document.querySelector('input[name="nama"]');
+                const icIn = document.querySelector('input[name="ic"]');
+                const emailIn = document.querySelector('input[name="email"]');
+                const phoneIn = document.querySelector('input[name="phone"]');
+                const addressIn = document.querySelector('textarea[name="address"]');
+                if(icIn) icIn.value = userProfile.ic;
+                if(emailIn) emailIn.value = userProfile.email;
+                if(nameIn) nameIn.value = userProfile.nama || '';
+                if(phoneIn) phoneIn.value = userProfile.phone || '';
+                if(addressIn) addressIn.value = userProfile.address || '';
+            }
+            showView('view-form');
+        }
+        const fileToBase64 = (file) => new Promise((resolve, reject) => {
+            const reader = new FileReader(); reader.readAsDataURL(file);
+            reader.onload = () => resolve({ name: file.name, mimeType: file.type, data: reader.result.split(',')[1] });
+            reader.onerror = error => reject(error);
+        });
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            if(!formData.get('ic') || formData.get('ic').length < 12) { showNotification("No. Kad Pengenalan tidak lengkap.", "error"); return; }
+            const consentBox = document.getElementById('form-consent');
+            if (consentBox && !consentBox.checked) { showNotification("Sila bersetuju dengan Dasar Privasi sebelum menghantar.", "warning"); return; }
+            showLoader('loading_submit', 0);
+            try {
+                const submitterUid = currentUser ? currentUser.uid : "Guest";
+                const payload = {
+                    uid: submitterUid,
+                    category: currentCategory,
+                    nama: formData.get('nama'),
+                    ic: formData.get('ic'),
+                    phone: formData.get('phone'),
+                    email: formData.get('email'),
+                    address: formData.get('address'),
+                    option_select: formData.get('option_select'),
+                    detail_1: formData.get('detail_1'),
+                    detail_2: formData.get('detail_2'),
+                    location: formData.get('location'),
+                    date_time: formData.get('date_time'),
+                    date_pref: formData.get('date_pref'),
+                    time_slot: formData.get('time_slot'),
+                    files: []
+                };
+                const fileInputs = document.querySelectorAll('input[type="file"]');
+                for (const input of fileInputs) { if (input.files.length > 0) { for (let i = 0; i < input.files.length; i++) { payload.files.push(await fileToBase64(input.files[i])); }}}
+                let refNo = "";
+                if(APPS_SCRIPT_URL && APPS_SCRIPT_URL !== "URL_APPSCRIPT_ANDA_DI_SINI") {
+                    const response = await fetch(APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+                    if (result.status !== 'success') {
+                        hideLoader();
+                        showNotification(result.message || "Ralat penghantaran. Sila cuba lagi.", "error");
+                        return;
+                    }
+                    refNo = result.refNo || "";
+                }
+                const records = JSON.parse(localStorage.getItem('app_submissions'));
+                records.push({ refNo: refNo, ic: formData.get('ic'), name: formData.get('nama'), category: currentCategory, status: "Dalam Semakan", date: new Date().toLocaleDateString('ms-MY') });
+                localStorage.setItem('app_submissions', JSON.stringify(records));
+                document.getElementById('output-refNo').innerText = refNo;
+                if(currentUser) {
+                    document.getElementById('member-note').classList.remove('hidden');
+                    document.getElementById('guest-warning').classList.add('hidden');
+                } else {
+                    document.getElementById('member-note').classList.add('hidden');
+                    document.getElementById('guest-warning').classList.remove('hidden');
+                }
+                hideLoader();
+                let msgCat = currentCategory.toLowerCase();
+                if(msgCat === 'sukarelawan') msgCat = 'pendaftaran sukarelawan';
+                if(msgCat === 'maklum balas') msgCat = 'maklum balas';
+                document.getElementById('popup-success-msg').innerText = `Terima kasih atas ${msgCat} yang dibuat, team ${BRAND.orgShort || ''} telah menerima ${msgCat} anda!`;
+                document.getElementById('modal-success-popup').classList.remove('hidden');
+            } catch (error) {
+                hideLoader();
+                showNotification("Ralat penghantaran.", "error");
+            }
+        }
+        // --- MEMBER HISTORY (guna uid; Apps Script v5 tak perlu idToken) ---
+        async function fetchMemberHistory() {
+            if(!currentUser) return;
+            showView('view-history');
+            const listContainer = document.getElementById('history-list');
+            listContainer.innerHTML = '<p class="text-center text-gray-500 py-10"><i class="fas fa-spinner fa-spin mr-2"></i> Sedang mengambil data...</p>';
+            currentHistoryData = [];
+            try {
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'get_history', uid: currentUser.uid })
+                });
+                const result = await response.json();
+                if (result.status !== 'success') {
+                    listContainer.innerHTML = `<p class="text-red-500 text-center">${escapeHtml(result.message || 'Gagal memuatkan sejarah.')}</p>`;
+                    return;
+                }
+                currentHistoryData = result.records || [];
+                if(currentHistoryData.length === 0) {
+                    listContainer.innerHTML = '<div class="text-center py-8 text-gray-500">Tiada rekod aduan dijumpai.</div>';
+                } else {
+                    listContainer.innerHTML = currentHistoryData.map((rec, index) => `
+                        <div onclick="openHistoryDetail(${index})" class="bg-white p-4 rounded shadow border-l-4 border-blue-500 card-hover transition cursor-pointer">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">${escapeHtml(rec.category)}</span>
+                                    <h4 class="font-bold text-gray-800 text-lg">${escapeHtml(rec.refNo)}</h4>
+                                    <p class="text-xs text-gray-500 mt-1"><i class="far fa-clock mr-1"></i> ${escapeHtml(rec.date)}</p>
+                                </div>
+                                <span class="bg-blue-50 text-blue-700 text-xs px-3 py-1 rounded-full font-bold border border-blue-100">${escapeHtml(rec.status)}</span>
+                            </div>
+                            <div class="mt-2 text-right">
+                                <span class="text-[10px] text-blue-500 font-semibold">Tekan untuk butiran <i class="fas fa-chevron-right ml-1"></i></span>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch(e) {
+                listContainer.innerHTML = '<p class="text-red-500 text-center">Gagal memuatkan sejarah.</p>';
+            }
+        }
+        // --- CHECK STATUS ---
+        async function checkStatus() {
+            const inputVal = document.getElementById('check-refNo').value.trim();
+            if(!inputVal) { showNotification("Sila masukkan nombor rujukan atau telefon.", "warning"); return; }
+            showLoader('loading_check', 0);
+            const resultList = document.getElementById('status-result-list');
+            const resultContainer = document.getElementById('status-result');
+            resultList.innerHTML = '';
+            resultContainer.classList.add('hidden');
+            currentHistoryData = [];
+            try {
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'check_status', query: inputVal })
+                });
+                const result = await response.json();
+                resultContainer.classList.remove('hidden');
+                if (result.status !== 'success') {
+                    resultList.innerHTML = `<div class="text-center p-6 bg-red-50 rounded-lg border border-red-100"><p class="text-xs text-gray-600">${escapeHtml(result.message || 'Ralat semasa semakan.')}</p></div>`;
+                    return;
+                }
+                currentHistoryData = result.records || [];
+                if (currentHistoryData.length > 0) {
+                    resultList.innerHTML = currentHistoryData.map((rec, index) => `
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-l-4 border-l-teal-500 flex justify-between items-center hover:bg-gray-50 transition cursor-pointer" onclick="openHistoryDetail(${index})">
+                            <div>
+                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">${escapeHtml(rec.category)}</span>
+                                <div class="text-sm font-bold text-gray-800">${escapeHtml(rec.refNo)}</div>
+                                <div class="text-xs text-gray-500">${escapeHtml(rec.date)}</div>
+                            </div>
+                            <div class="text-right">
+                                <span class="inline-block px-2 py-1 bg-gray-100 rounded text-xs font-bold text-gray-600 mb-1">${escapeHtml(rec.status)}</span>
+                                <div class="text-[10px] text-teal-600 font-bold">Lihat Butiran <i class="fas fa-chevron-right ml-1"></i></div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    resultList.innerHTML = `
+                        <div class="text-center p-6 bg-red-50 rounded-lg border border-red-100">
+                            <div class="text-red-500 text-2xl mb-2"><i class="fas fa-search"></i></div>
+                            <h4 class="font-bold text-gray-700">Tiada Rekod Dijumpai</h4>
+                            <p class="text-xs text-gray-500 mt-1">Sila pastikan nombor rujukan atau nombor telefon adalah betul.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                showNotification("Ralat sambungan server.", "error");
+            } finally {
+                hideLoader();
+            }
+        }
+        // --- INIT ---
+        window.onload = function() {
+            applyBrandToTranslations();
+            showLoader('loading_text', 0);
+            fetchGlobalConfig();
+            setTimeout(() => {
+                if(window.firebaseLoaded) {
+                    window.onAuthStateChanged(window.auth, async (user) => {
+                        hideLoader();
+                        if (user) {
+                            currentUser = user;
+                            try {
+                                const docSnap = await window.getDoc(window.doc(window.db, "users", user.uid));
+                                if (docSnap.exists()) userProfile = docSnap.data();
+                                updateDashboardUI();
+                                showView('view-dashboard');
+                            } catch (e) { console.error("Profile fetch error:", e); }
+                        } else {
+                            currentUser = null; userProfile = null;
+                            showView('view-home');
+                        }
+                    });
+                } else {
+                    console.error("Firebase failed to init.");
+                    hideLoader();
+                    showView('view-home');
+                }
+            }, 500);
+            setInterval(fetchGlobalConfig, 60000);
+        };
+    </script>
+</body>
+</html>
