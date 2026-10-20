@@ -66,11 +66,10 @@ ask OFFICE_LABEL  "Label lokasi di halaman utama (cth: Pejabat ADUN Karambunai)"
 ask ADMIN_EMAIL   "Emel ADMIN (log masuk dashboard + terima kod reset)"
 [[ "$ADMIN_EMAIL" =~ ^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$ ]] || die "Emel admin tidak sah."
 ask CONTACT_EMAIL "Emel AWAM untuk orang ramai hubungi" "$ADMIN_EMAIL"
-ask WHATSAPP      "Nombor WhatsApp, digit sahaja + kod negara (cth: 60123456789)"
+ask WHATSAPP      "Nombor WhatsApp, digit sahaja + kod negara (cth: 60123456789). Kosongkan kalau belum ada" ""
 WHATSAPP="${WHATSAPP//[^0-9]/}"
-[ -n "$WHATSAPP" ] || die "Nombor WhatsApp diperlukan (digit sahaja)."
 # Nombor tempatan Malaysia (mula dengan 0) → format antarabangsa untuk pautan wa.me / tel:
-if [[ "$WHATSAPP" == 0* ]]; then WHATSAPP="60${WHATSAPP#0}"; echo "  (nombor ditukar ke format antarabangsa: $WHATSAPP)"; fi
+if [[ -n "$WHATSAPP" && "$WHATSAPP" == 0* ]]; then WHATSAPP="60${WHATSAPP#0}"; echo "  (nombor ditukar ke format antarabangsa: $WHATSAPP)"; fi
 ask PHONE_DISPLAY "Cara nombor dipaparkan (cth: 012-345 6789)" "$WHATSAPP"
 ask GITHUB_OWNER  "Akaun/organisasi GitHub pemilik repo laman (kosongkan kalau belum tahu)" ""
 ask SITE_URL      "URL laman klien: alamat pages.dev atau subdomain, cth https://aduan.klien.my/ (kosongkan dulu kalau belum ada)" ""
@@ -112,8 +111,9 @@ replace_all "__ORG_SHORT__"      "$ORG_SHORT"      "${TOKFILES[@]}"
 replace_all "__OFFICE_LABEL__"   "$OFFICE_LABEL"   "${TOKFILES[@]}"
 replace_all "__ADMIN_EMAIL__"    "$ADMIN_EMAIL"    "${TOKFILES[@]}"
 replace_all "__CONTACT_EMAIL__"  "$CONTACT_EMAIL"  "${TOKFILES[@]}"
-replace_all "__WHATSAPP__"       "$WHATSAPP"       "${TOKFILES[@]}"
-replace_all "__PHONE_DISPLAY__"  "$PHONE_DISPLAY"  "${TOKFILES[@]}"
+# WhatsApp/telefon: kalau kosong, token DIKEKALKAN supaya jelas belum diisi (jangan reka nombor).
+[ -z "$WHATSAPP" ]      || replace_all "__WHATSAPP__"      "$WHATSAPP"      "${TOKFILES[@]}"
+[ -z "$PHONE_DISPLAY" ] || replace_all "__PHONE_DISPLAY__" "$PHONE_DISPLAY" "${TOKFILES[@]}"
 replace_all "__GITHUB_REPO__"    "$GITHUB_REPO"    "${TOKFILES[@]}"
 replace_all "__SITE_URL__"       "$SITE_URL"       "${TOKFILES[@]}"
 replace_all "__PRIMARY_COLOR__"  "$PRIMARY_COLOR"  "${TOKFILES[@]}"
@@ -201,4 +201,5 @@ if [ -n "$LEFT" ]; then
   grep -rhoE '__[A-Z0-9_]+__' "$OUT/site" "$OUT/appscript" | sort -u | tr '\n' ' '; echo
 fi
 [ -n "$GITHUB_OWNER" ] || echo "NOTA: GITHUB_OWNER kosong → cms/config.yml 'repo:' perlu diisi sendiri kemudian."
+[ -n "$WHATSAPP" ] || echo "NOTA: WHATSAPP/telefon kosong → ganti __WHATSAPP__ dan __PHONE_DISPLAY__ dalam site/config.js sebelum live."
 [ -n "$SITE_URL" ] || echo "NOTA: SITE_URL kosong → isi CLIENT.SITE_URL dalam Setup.gs selepas Cloudflare Pages siap (docs/03 bahagian B/D)."
