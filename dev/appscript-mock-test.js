@@ -683,7 +683,7 @@ function runTests() {
   });
 
   console.log("\n[8] Suis tutup borang dari Sveltia (content/site.json)");
-  run(env, `CLIENT.SITE_URL="https://klien.github.io/portal/"`);
+  run(env, `CLIENT.SITE_URL="https://klien.pages.dev/"`);
   const flushCache = () => Object.keys(env.cacheStore).forEach((k) => delete env.cacheStore[k]);
   const site = (o) => {
     env.fetchImpl = () => ({ getResponseCode: () => 200, getContentText: () => JSON.stringify(o) });
@@ -694,7 +694,7 @@ function runTests() {
     assert.match(post(env, base).message, /ditutup/);
     assert.match(post(env, { ...base, category: "Maklum Balas" }).message, /ditutup/);
     assert.strictEqual(post(env, { ...base, category: "Sukarelawan", nama: "Ali" }).status, "success");
-    assert.ok(env.fetches[env.fetches.length - 1].startsWith("https://klien.github.io/portal/content/site.json?t="));
+    assert.ok(env.fetches[env.fetches.length - 1].startsWith("https://klien.pages.dev/content/site.json?t="));
   });
   t("maintenance=true → semua ditolak", () => {
     site({ maintenance: true, category_status: {} });

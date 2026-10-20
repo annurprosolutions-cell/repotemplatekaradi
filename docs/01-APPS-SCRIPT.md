@@ -14,7 +14,7 @@ var CLIENT = {
   APP_NAME:    "KARA-Di",
   ORG_NAME:    "Pusat Khidmat Rakyat Karambunai",
   ADMIN_EMAIL: "admin@klien.com",
-  SITE_URL:    "https://namaklien.github.io/portal-klien/",  // boleh kosongkan dulu, isi selepas docs/03
+  SITE_URL:    "https://aduan.klien.my/",                    // boleh kosongkan dulu; isi bila laman dah hidup (docs/03)
   PRIMARY_COLOR: "#1A4A9A",
   FOLDER_PARENT_ID: ""                                        // kosong = My Drive
 };

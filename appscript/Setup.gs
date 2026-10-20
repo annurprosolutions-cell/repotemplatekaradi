@@ -28,8 +28,9 @@ var CLIENT = {
   // Guna emel yang klien betul-betul boleh akses.
   ADMIN_EMAIL: "__ADMIN_EMAIL__",
 
-  // URL laman web klien (GitHub Pages), berakhir dengan "/". Cth:
-  //   "https://namaklien.github.io/portal-klien/"
+  // URL laman web klien, berakhir dengan "/". Mula dengan alamat Cloudflare Pages, kemudian
+  // tukar ke subdomain, dan akhirnya domain utama (docs/03 bahagian G). Cth:
+  //   "https://abc-klien.pages.dev/"   →   "https://aduan.klien.my/"
   // Dipakai supaya server turut menghormati suis "tutup borang" / "maintenance"
   // yang ditetapkan dalam Sveltia CMS. Boleh dikosongkan — kalau kosong atau
   // tidak boleh dicapai, borang kekal diterima (fail-open).
@@ -440,7 +441,7 @@ function healthReport_() {
     lines.push("LAMAN WEB (SITE_URL): belum diisi — suis tutup borang hanya berkuat kuasa di browser.");
   } else {
     var st = fetchSiteState_();
-    lines.push("LAMAN WEB (SITE_URL): " + (st ? "✅ content/site.json boleh dibaca (maintenance=" + st.maintenance + ")" : "⚠️ content/site.json tidak boleh dibaca — semak SITE_URL / GitHub Pages"));
+    lines.push("LAMAN WEB (SITE_URL): " + (st ? "✅ content/site.json boleh dibaca (maintenance=" + st.maintenance + ")" : "⚠️ content/site.json tidak boleh dibaca — semak SITE_URL / deploy Cloudflare Pages"));
   }
   return lines;
 }

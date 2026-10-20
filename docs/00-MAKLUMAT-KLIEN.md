@@ -10,8 +10,10 @@ kebanyakannya boleh diubah kemudian (lihat lajur "Boleh ubah kemudian di").
 | **Akaun Google untuk sistem** | Akaun khas (cth `pusatkhidmat.abc@gmail.com`), 2FA dihidupkan, nombor telefon pemulihan milik klien | Sheet, Drive, Apps Script, Firebase semua dimiliki akaun ini. Kalau akaun itu hilang/digantung, sistem berhenti. |
 | **Emel admin** (`ADMIN_EMAIL`) | Boleh akaun yang sama di atas, atau emel lain yang klien betul-betul baca | Untuk log masuk dashboard + terima kod reset kata laluan. |
 | **Emel awam** (`BRAND.email`) | Emel yang orang ramai boleh hubungi | Dipaparkan di portal; **boleh** berbeza dari emel admin. |
-| **Akaun GitHub** | Satu akaun/organisasi untuk repo laman; setiap staf yang edit CMS ada akaun sendiri | Sveltia CMS menulis ke repo GitHub. |
-| **Siapa pembangun/pentadbir teknikal?** | Anda — dijemput sebagai Editor pada Sheet, Owner/Editor pada Firebase, Admin pada repo | Supaya klien boleh minta bantuan tanpa berkongsi kata laluan. |
+| **Akaun GitHub** (milik klien) | Satu akaun/organisasi untuk repo laman; setiap staf yang edit CMS ada akaun sendiri | Sveltia CMS menulis ke repo GitHub. |
+| **Akaun Cloudflare** (milik klien, percuma) | Daftar dengan emel klien | Hosting laman (Pages) dan Worker log masuk CMS. |
+| **Domain & pemegang DNS** | Klien guna **subdomain** dahulu (cth `aduan.klien.my`); domain utama kemudian bila berpuas hati | Perlu tahu siapa yang boleh tambah rekod DNS (registrar). |
+| **Siapa pembangun/pentadbir teknikal?** | Anda — dijemput sebagai Editor pada Sheet, Owner/Editor pada Firebase, Admin pada repo, Member pada Cloudflare | Supaya klien boleh minta bantuan tanpa berkongsi kata laluan. |
 
 ## B. Jenama & kandungan
 
@@ -34,7 +36,7 @@ kebanyakannya boleh diubah kemudian (lihat lajur "Boleh ubah kemudian di").
 - Adakah **keenam-enam kategori** diperlukan? (Jemputan, Permohonan/Mohon Bantuan, Aduan, Temujanji, Maklum Balas, Sukarelawan). Yang tak diperlukan: tutup melalui CMS (`category_status`) — kad akan jadi "DITUTUP". Membuang terus kategori memerlukan ubah `index.html`, `Setup.gs` (`CATEGORY_KEYS`/`CATEGORY_LABELS`), dan `admin/index.html` (`TABS`).
 - Pilihan jenis dalam borang (cth jenis aduan, jenis bantuan) — ada dalam `categoryConfig` di `site/index.html`. Minta senarai pilihan klien.
 - Bahasa: Bahasa Melayu + English (butang BM/EN sedia ada).
-- Domain sendiri? (cth `aduan.klien.my`). Jika ya, perlu akses DNS — lihat `docs/03`.
+- Subdomain yang dimahukan (cth `aduan.klien.my`) dan siapa pegang DNS-nya. Domain utama ditukar kemudian — `docs/03` bahagian G.
 
 ## D. Undang-undang & operasi
 
@@ -52,5 +54,5 @@ Sediakan nilai-nilai ini dalam satu nota — itulah soalan yang skrip akan tanya
 SLUG            (huruf kecil + sempang; jadi nama folder & repo)
 APP_NAME        TAGLINE        ORG_NAME        ORG_SHORT        OFFICE_LABEL
 ADMIN_EMAIL     CONTACT_EMAIL  WHATSAPP        PHONE_DISPLAY
-GITHUB_OWNER    SITE_URL (kosong = GitHub Pages)    PRIMARY_COLOR
+GITHUB_OWNER    SITE_URL (kosong dulu; isi bila ada alamat pages.dev / subdomain)    CMS_AUTH_URL (kosong dulu; isi selepas Worker siap)    PRIMARY_COLOR
 ```

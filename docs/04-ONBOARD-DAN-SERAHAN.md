@@ -45,14 +45,15 @@ Gunakan data ujian dan **padam semuanya** selepas itu (kekalkan baris header dal
 |---|---|
 | Semak ⚙️ → **Semak Status Sistem** semua ✅ | Bulanan |
 | **Sandaran:** Sheet → File → Version history (automatik) + eksport `.xlsx` bulanan ke lokasi selamat | Bulanan |
-| Tukar token CMS yang luput; **cabut akses staf yang berhenti** (collaborator GitHub, Editor Sheet, peranan Firebase) | Bila perlu |
+| **Cabut akses staf yang berhenti**: collaborator GitHub, Editor Sheet, peranan Firebase, member Cloudflare (dan token CMS mereka jika guna token) | Bila perlu |
 | Semak kuota Gmail/Drive; kosongkan data ujian | Sekali pada permulaan |
 | Kemas kini template → salin perubahan ke klien (Apps Script: *New version*; laman: push ke repo) | Bila ada pembaikan |
-| Semak versi Sveltia & uji semula `/cms/` selepas naik taraf | Suku tahunan |
+| Naik taraf Sveltia: tukar versi dalam `cms/index.html`, jalankan `node dev/cms-load-test.js`, uji `/cms/` pada satu klien dahulu | Suku tahunan |
+| Semak penggunaan build Cloudflare Pages & status Worker log masuk CMS | Bulanan |
 
 ## 4. Senarai serahan (beri kepada klien)
 
-- [ ] Rekod bertulis **siapa pemilik** setiap komponen: akaun Google (Sheet/Drive/Apps Script), projek Firebase, repo GitHub, domain
+- [ ] Rekod bertulis **siapa pemilik** setiap komponen: akaun Google (Sheet/Drive/Apps Script), projek Firebase, repo GitHub, akaun Cloudflare (Pages + Worker), domain & pemegang DNS
 - [ ] URL: portal, `/admin/`, `/cms/`, Sheet, folder Drive — **tanpa** kata laluan dalam dokumen yang sama
 - [ ] Kata laluan admin & akaun Google dihantar melalui saluran berasingan / pengurus kata laluan
 - [ ] Kaedah pemulihan akaun Google (nombor telefon & emel pemulihan milik klien)

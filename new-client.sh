@@ -8,7 +8,7 @@
 #   WHATSAPP=60123456789 ./new-client.sh
 #
 # Hasil: clients/<slug>/ mengandungi
-#   site/        → isi folder ini ke akar repo GitHub klien (GitHub Pages)
+#   site/        → isi folder ini ke akar repo GitHub klien (dihoskan di Cloudflare Pages)
 #   appscript/   → tampal ke projek Apps Script klien (nilai CLIENT sudah diisi)
 #   firebase/    → firestore.rules
 #   docs/        → panduan langkah demi langkah
@@ -73,20 +73,20 @@ WHATSAPP="${WHATSAPP//[^0-9]/}"
 if [[ "$WHATSAPP" == 0* ]]; then WHATSAPP="60${WHATSAPP#0}"; echo "  (nombor ditukar ke format antarabangsa: $WHATSAPP)"; fi
 ask PHONE_DISPLAY "Cara nombor dipaparkan (cth: 012-345 6789)" "$WHATSAPP"
 ask GITHUB_OWNER  "Akaun/organisasi GitHub pemilik repo laman (kosongkan kalau belum tahu)" ""
-ask SITE_URL      "URL laman web klien (kosongkan = anggar GitHub Pages)" ""
+ask SITE_URL      "URL laman klien: alamat pages.dev atau subdomain, cth https://aduan.klien.my/ (kosongkan dulu kalau belum ada)" ""
+ask CMS_AUTH_URL  "URL Worker log masuk CMS, cth https://abc-cms-auth.akaun.workers.dev (kosongkan dulu kalau belum deploy)" ""
 ask PRIMARY_COLOR "Warna utama (hex)" "#1A4A9A"
 [[ "$PRIMARY_COLOR" =~ ^#[0-9a-fA-F]{6}$ ]] || die "Warna mesti format #RRGGBB."
 
 if [ -n "$GITHUB_OWNER" ]; then
   GITHUB_REPO="$GITHUB_OWNER/$SLUG"
-  [ -n "$SITE_URL" ] || SITE_URL="https://$GITHUB_OWNER.github.io/$SLUG/"
 else
   GITHUB_REPO="GANTI-OWNER/$SLUG"
 fi
 if [ -n "$SITE_URL" ]; then SITE_URL="${SITE_URL%/}/"; fi
 
 for kv in "SLUG=$SLUG" "APP_NAME=$APP_NAME" "TAGLINE=$TAGLINE" "ORG_NAME=$ORG_NAME" "ORG_SHORT=$ORG_SHORT" "OFFICE_LABEL=$OFFICE_LABEL" \
-          "ADMIN_EMAIL=$ADMIN_EMAIL" "CONTACT_EMAIL=$CONTACT_EMAIL" "PHONE_DISPLAY=$PHONE_DISPLAY" "GITHUB_REPO=$GITHUB_REPO" "SITE_URL=$SITE_URL"; do
+          "ADMIN_EMAIL=$ADMIN_EMAIL" "CONTACT_EMAIL=$CONTACT_EMAIL" "PHONE_DISPLAY=$PHONE_DISPLAY" "GITHUB_REPO=$GITHUB_REPO" "SITE_URL=$SITE_URL" "CMS_AUTH_URL=$CMS_AUTH_URL"; do
   check_safe "${kv%%=*}" "${kv#*=}"
 done
 
@@ -98,6 +98,12 @@ cp -R "$HERE/firebase"  "$OUT/firebase"
 cp -R "$HERE/docs"      "$OUT/docs"
 
 # ---- isi token --------------------------------------------------------------
+# base_url Worker CMS: kalau diberi, hidupkan barisnya; kalau tidak, biar sebagai komen contoh.
+if [ -n "$CMS_AUTH_URL" ]; then
+  replace_all "# base_url: __CMS_AUTH_URL__" "base_url: ${CMS_AUTH_URL%/}" "$OUT/site/cms/config.yml"
+else
+  replace_all "__CMS_AUTH_URL__" "https://nama-worker.akaun.workers.dev" "$OUT/site/cms/config.yml"
+fi
 TOKFILES=("$OUT/site/config.js" "$OUT/site/content/site.json" "$OUT/site/cms/config.yml" "$OUT/appscript/Setup.gs")
 replace_all "__APP_NAME__"       "$APP_NAME"       "${TOKFILES[@]}"
 replace_all "__TAGLINE__"        "$TAGLINE"        "${TOKFILES[@]}"
@@ -148,15 +154,19 @@ Dijana: $(date '+%d/%m/%Y %H:%M')
 - [ ] Projek dicipta; Email/Password dihidupkan
 - [ ] Firestore dicipta (asia-southeast1); firestore.rules diterbit
 - [ ] firebaseConfig disalin ke site/config.js → FIREBASE
-- [ ] Domain GitHub Pages ditambah ke Authorized domains
+- [ ] Alamat pages.dev, subdomain (dan nanti domain utama) ditambah ke Authorized domains
 - [ ] (Disyorkan) API key disekat ikut HTTP referrer
 
-## C. GitHub Pages + Sveltia — docs/03-GITHUB-PAGES-DAN-SVELTIA.md
-- [ ] Repo $GITHUB_REPO dicipta; isi folder site/ di akar repo
-- [ ] Pages dihidupkan (branch main, folder root)
-- [ ] CLIENT.SITE_URL dalam Setup.gs disemak; Apps Script di-redeploy (versi baharu)
-- [ ] /cms/ boleh dibuka; log masuk berjaya; satu suntingan ujian muncul di laman
+## C. GitHub + Cloudflare Pages + Sveltia — docs/03-CLOUDFLARE-DAN-SVELTIA.md
+- [ ] Akaun GitHub & Cloudflare klien sedia; pembangun dijemput (collaborator / member)
+- [ ] Repo $GITHUB_REPO dicipta (private); isi folder site/ di akar repo
+- [ ] Cloudflare Pages disambung ke repo (preset None, build command kosong, output /)
+- [ ] Alamat \`<projek>.pages.dev\` berfungsi; CLIENT.SITE_URL + Firebase Authorized domains dikemas kini
+- [ ] Subdomain klien disambung (CNAME → pages.dev); SSL aktif; lima tempat dikemas kini (docs/03 bahagian D)
+- [ ] Worker \`sveltia-cms-auth\` dideploy dalam akaun Cloudflare klien; GitHub OAuth App didaftar; ALLOWED_DOMAINS diisi
+- [ ] cms/config.yml \`base_url\` = URL Worker; /cms/ → "Sign In with GitHub" berjaya; satu suntingan ujian muncul di laman
 - [ ] Staf CMS dijemput sebagai collaborator (Write)
+- [ ] (Kemudian, bila klien berpuas hati) Domain utama — docs/03 bahagian G
 
 ## D. Ujian penerimaan
 - [ ] Logo klien diganti (site/assets/) dan config.js → BRAND.logo dikemas kini
@@ -184,10 +194,11 @@ echo "Langkah seterusnya (ikut $OUT/CHECKLIST.md):"
 echo "  1. docs/01-APPS-SCRIPT.md   — tampal appscript/, setup, deploy → dapat URL /exec"
 echo "  2. docs/02-FIREBASE.md      — cipta projek Firebase → dapat firebaseConfig"
 echo "  3. Edit site/config.js      — tampal URL /exec + firebaseConfig; letak logo di site/assets/"
-echo "  4. docs/03-...SVELTIA.md    — push site/ ke GitHub, hidupkan Pages & CMS"
+echo "  4. docs/03-CLOUDFLARE-DAN-SVELTIA.md — push site/ ke GitHub, Cloudflare Pages, Worker log masuk CMS"
 echo
 if [ -n "$LEFT" ]; then
   echo "Token yang masih perlu diisi manual (dijangka: Firebase sahaja): $LEFT"
   grep -rhoE '__[A-Z0-9_]+__' "$OUT/site" "$OUT/appscript" | sort -u | tr '\n' ' '; echo
 fi
-[ -n "$GITHUB_OWNER" ] || echo "NOTA: GITHUB_OWNER kosong → cms/config.yml 'repo:' dan CLIENT.SITE_URL perlu diisi sendiri kemudian."
+[ -n "$GITHUB_OWNER" ] || echo "NOTA: GITHUB_OWNER kosong → cms/config.yml 'repo:' perlu diisi sendiri kemudian."
+[ -n "$SITE_URL" ] || echo "NOTA: SITE_URL kosong → isi CLIENT.SITE_URL dalam Setup.gs selepas Cloudflare Pages siap (docs/03 bahagian B/D)."

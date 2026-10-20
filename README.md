@@ -10,7 +10,7 @@ setiap satu dengan emel, Google Sheet, Drive, Firebase dan laman web sendiri.
 ## Seni bina
 
 ```
- Rakyat ──▶ site/index.html (GitHub Pages) ──┬──▶ content/site.json ◀─── Sveltia CMS (/cms/) ◀─── Staf klien (akaun GitHub)
+ Rakyat ──▶ site/index.html (Cloudflare Pages) ┬──▶ content/site.json ◀─── Sveltia CMS (/cms/) ◀─── Staf klien (akaun GitHub)
                                              ├──▶ Firebase Auth + Firestore   (akaun rakyat sahaja)
                                              └──▶ Apps Script Web App ───┬──▶ Google Sheet  (6 tab kategori)
  Admin ───▶ site/admin/index.html ───────────────────────────────────────┤──▶ Google Drive  (3 folder: PDF serahan,
@@ -41,7 +41,7 @@ Kemudian ikut `clients/<slug>/CHECKLIST.md`, dalam urutan ini:
 1. **`docs/01-APPS-SCRIPT.md`** — Sheet baharu → tampal kod → menu **🚀 Setup Pertama Kali** (cipta tab, folder Drive, kata laluan admin dalam satu klik) → Deploy → dapat URL `/exec`.
 2. **`docs/02-FIREBASE.md`** — projek Firebase baharu → dapat `firebaseConfig`.
 3. Edit **`site/config.js`** — tampal URL `/exec` + `firebaseConfig`, letak logo klien.
-4. **`docs/03-GITHUB-PAGES-DAN-SVELTIA.md`** — push `site/` ke GitHub → hidupkan Pages → log masuk `/cms/`.
+4. **`docs/03-CLOUDFLARE-DAN-SVELTIA.md`** — push `site/` ke repo GitHub klien → Cloudflare Pages (`pages.dev` → subdomain → domain utama) → Worker log masuk → `/cms/`.
 5. **`docs/04-ONBOARD-DAN-SERAHAN.md`** — ujian penerimaan, PDPA, penyelenggaraan, senarai serahan.
 
 Anggaran masa (agakan aku, bukan diukur): klien pertama ~1–1.5 jam termasuk belajar; klien seterusnya ~40 minit.
@@ -55,11 +55,12 @@ tukar warna `#1A4A9A` dalam `site/index.html` dan `site/admin/index.html` kalau 
 karadi-template/
 ├── README.md                 ← fail ini
 ├── new-client.sh             ← penjana folder klien
-├── site/                     ← ISI folder ini = akar repo GitHub klien (GitHub Pages)
+├── site/                     ← ISI folder ini = akar repo GitHub klien (dihoskan di Cloudflare Pages)
 │   ├── index.html            ← portal rakyat
 │   ├── admin/index.html      ← dashboard admin
 │   ├── cms/                  ← Sveltia CMS (index.html + config.yml)
 │   ├── content/site.json     ← kandungan yang diurus CMS
+│   ├── _headers              ← header keselamatan (Cloudflare Pages / Netlify)
 │   ├── config.js             ← ★ SATU fail konfigurasi klien untuk laman web
 │   └── assets/               ← logo, brand.js, imej lalai, uploads/ (gambar dari CMS)
 ├── appscript/
@@ -98,19 +99,21 @@ karadi-template/
 | `node dev/appscript-mock-test.js` | 38 lulus | Logik `Code.gs`/`Setup.gs` terhadap **mock** Sheets/Drive/Properties. Model auto-parse sel (nombor/formula) adalah andaian aku tentang Google Sheets. |
 | `node dev/e2e-browser-test.js` | 19 lulus | Portal + admin dalam Chromium sebenar ↔ mock backend; diuji juga pada folder yang dijana `new-client.sh`. CDN (Tailwind, Font Awesome, Firebase SDK) disekat dalam sandbox, jadi **gaya visual & Firebase tidak diuji**. |
 | Mutation test pada ujian mock | 3 mutasi ditangkap | Sahkan ujian betul-betul gagal bila fix dibuang. |
+| `node dev/cms-load-test.js` | skrin log masuk dipaparkan | Sveltia **0.248.1 sebenar** (dari npm) memuat `cms/config.yml` template dan papar "Sign In with GitHub" + "Sign In Using Access Token". `config.yml` turut sah terhadap skema rasmi dalam pakej. Tidak termasuk log masuk sebenar atau suntingan. |
 
-**Belum diuji (perlu anda sahkan pada klien pertama):** Apps Script sebenar (kebenaran, menu, PDF converter, kuota), tingkah laku format sel `@` dalam Google Sheets sebenar, aliran Firebase (daftar/log masuk/reset) dan `firestore.rules`, GitHub Pages, **Sveltia CMS** (docs rasmi tak dapat dicapai dari sandbox — skema `config.yml` ikut format Decap-serasi dari pengetahuan umum; pilihan log masuk token dan widget senarai-rentetan perlu disahkan), rupa visual di telefon.
+**Belum diuji (perlu anda sahkan pada klien pertama):** Apps Script sebenar (kebenaran, menu, PDF converter, kuota), tingkah laku format sel `@` dalam Google Sheets sebenar, aliran Firebase (daftar/log masuk/reset) dan `firestore.rules`, **Cloudflare Pages** (tetapan build, custom domain, `_headers`), **Worker `sveltia-cms-auth`** dan log masuk/suntingan CMS sebenar ke GitHub, rupa visual di telefon.
 
 ## Had & keputusan reka bentuk yang perlu anda tahu
 
-- **Tutup borang/maintenance tak serta-merta.** Ia commit ke GitHub → Pages deploy ~1–2 minit → portal ambil dalam ≤60 saat. Untuk kecemasan ini lebih perlahan berbanding suis dalam Sheet dulu.
-- **Staf CMS perlu akaun GitHub** dan dijemput sebagai collaborator, serta token sendiri (atau OAuth proxy). Beban latihan untuk staf bukan teknikal.
+- **Tutup borang/maintenance tak serta-merta.** Ia commit ke GitHub → Cloudflare Pages build/deploy (~1–2 minit, belum diukur) → portal ambil dalam ≤60 saat. Untuk kecemasan ini lebih perlahan berbanding suis dalam Sheet dulu.
+- **Staf CMS perlu akaun GitHub** dan dijemput sebagai collaborator. Dengan Worker `sveltia-cms-auth` (satu per klien, dalam akaun Cloudflare klien) staf cuma klik "Sign In with GitHub"; tanpa Worker mereka perlu urus token sendiri.
+- **Setiap simpanan CMS = 1 build Cloudflare** (pelan percuma ~500 build/bulan menurut perbandingan pihak ketiga). Galakkan staf mengumpul suntingan.
 - **Fail muat naik & PDF serahan dikongsi "sesiapa dengan pautan"** (sama seperti asal). Pautan sukar diteka tetapi sesiapa yang memegangnya boleh buka — dan PDF mengandungi alamat/telefon. Lihat `docs/04` untuk pilihan.
 - **Format no. rujukan** masih 4 digit akhir IC + tarikh (+ `-2` jika bertindih). Dengan data awam sudah di-mask, risiko turun, tetapi ia masih boleh diteka. Tambah akhiran rawak kalau klien mahu lebih ketat (ubah `generateRefNo_`).
 - **Had percubaan (check status, lupa kata laluan, log masuk) adalah global**, bukan per-IP (Apps Script tiada IP). Penyerang boleh menyekat sementara; admin sentiasa boleh set semula kata laluan melalui menu Sheet.
 - **Satu admin sahaja** (satu emel + satu kata laluan) — sama seperti asal.
 - **Tailwind guna CDN "play"** (sama seperti asal). Berfungsi tetapi bukan cara dicadangkan Tailwind untuk produksi; boleh dikompil kemudian.
-- Portal tiada CSP header (GitHub Pages tak benarkan header tersuai).
+- Header keselamatan asas disediakan melalui `site/_headers`, tetapi **tiada CSP** (portal guna Tailwind CDN, Firebase SDK dan skrip inline; CSP ketat akan memecahkannya).
 
 ## Ujian & penyelenggaraan template
 

@@ -11,7 +11,7 @@
 // Pilihan: CHROMIUM_PATH=/laluan/ke/chrome   PORT=8765
 //
 // TIDAK diuji di sini: Firebase sebenar (daftar/log masuk rakyat), Tailwind/CSS
-// dari CDN, Google Apps Script sebenar, GitHub Pages, Sveltia CMS. Lihat README.
+// dari CDN, Google Apps Script sebenar, Cloudflare Pages, log masuk Sveltia CMS. Lihat README.
 // =============================================================================
 const fs = require("fs"),
   os = require("os"),

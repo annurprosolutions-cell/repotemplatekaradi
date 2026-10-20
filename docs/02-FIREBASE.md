@@ -23,7 +23,7 @@ dan objek `firebaseConfig` yang ditampal ke `site/config.js`.
 
 ### 3. Benarkan domain laman web
 1. Authentication → tab **Settings** → **Authorized domains** → **Add domain**.
-2. Masukkan domain laman: `namaowner.github.io` (tanpa `https://` dan tanpa nama repo). Jika guna domain sendiri, tambah juga domain itu.
+2. Masukkan **nama hos sahaja** (tanpa `https://`, tanpa `/`): mula dengan `nama-projek.pages.dev` (alamat Cloudflare Pages), kemudian tambah subdomain klien (`aduan.klien.my`), dan nanti domain utama. **Tambah, jangan ganti** — biar yang lama hidup semasa peralihan.
    `localhost` sudah ada (untuk ujian tempatan).
 
 > Tanpa langkah ini, daftar/log masuk di laman sebenar gagal dengan `auth/unauthorized-domain`.
@@ -67,7 +67,7 @@ const firebaseConfig = {
 ### 7. Sekat API key (disyorkan, 5 minit)
 1. **https://console.cloud.google.com** → pilih projek yang sama → **APIs & Services → Credentials**.
 2. Klik **Browser key** (dicipta automatik oleh Firebase).
-3. *Application restrictions* → **Websites** → tambah `https://namaowner.github.io/*` (dan domain sendiri jika ada) → **Save**.
+3. *Application restrictions* → **Websites** → tambah `https://nama-projek.pages.dev/*` dan `https://aduan.klien.my/*` (tambah domain utama bila ia dipakai) → **Save**.
 4. Uji daftar/log masuk selepas ini. Kalau gagal dengan ralat key/referrer, semak ejaan domain.
 
 ### 8. Sesuaikan emel reset kata laluan
@@ -94,7 +94,7 @@ Authentication → **Templates → Password reset** → ubah nama pengirim, subj
 | Gejala | Punca | Penyelesaian |
 |---|---|---|
 | Portal: *"Ralat Konfigurasi Firebase"* / konsol: *"Firebase belum dikonfigurasi"* | `config.js` masih ada nilai `__FIREBASE_…__` | Tampal `firebaseConfig` (langkah 6). |
-| `auth/unauthorized-domain` | Domain laman belum ditambah | Langkah 3. |
+| `auth/unauthorized-domain` | Domain laman (pages.dev / subdomain / domain utama) belum ditambah | Langkah 3. |
 | `auth/operation-not-allowed` | Email/Password belum dihidupkan | Langkah 2. |
 | `auth/invalid-api-key` / `API key not valid` | Salah salin, atau sekatan referrer terlalu ketat | Semak `apiKey`; semak langkah 7. |
 | Daftar berjaya tetapi profil tak tersimpan / `Missing or insufficient permissions` | Rules tak diterbit, atau medan baharu tak ada dalam `hasOnly` | Langkah 5. |

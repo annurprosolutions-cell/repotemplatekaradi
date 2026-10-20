@@ -8,10 +8,11 @@ backend:
   name: github
   repo: __GITHUB_REPO__        # format: pemilik/nama-repo  (cth: abc-klien/portal-abc)
   branch: main
-  # Log masuk mudah: butang "Sign in with token" (Personal Access Token) — tiada
-  # server tambahan diperlukan. Untuk log masuk OAuth GitHub biasa, anda perlu
-  # OAuth proxy (sveltia-cms-auth); kemudian buang # di bawah dan isi URL-nya:
-  # base_url: https://nama-worker.nama-akaun.workers.dev
+  # Log masuk:
+  #  • "Sign In Using Access Token" (Personal Access Token) — tiada server tambahan; untuk ujian / pembangun.
+  #  • "Sign In with GitHub" (OAuth) — perlu Worker sveltia-cms-auth dalam akaun Cloudflare klien
+  #    (docs/03). Selepas Worker siap, buang # di bawah dan isi URL Worker (new-client.sh boleh isi).
+  # base_url: __CMS_AUTH_URL__
 
 # Gambar yang dimuat naik disimpan di sini (relatif dari akar repo), dan laluan
 # yang disimpan dalam content/site.json ialah laluan relatif yang sama.

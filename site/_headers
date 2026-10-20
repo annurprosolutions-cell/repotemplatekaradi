@@ -1,0 +1,22 @@
+# Header keselamatan untuk Cloudflare Pages (dan Netlify — format sama).
+# Tidak berkesan di GitHub Pages (di sana fail ini hanya dihidangkan sebagai fail biasa).
+#
+# SENGAJA tiada Content-Security-Policy: portal memuatkan Tailwind CDN, Firebase SDK, Font Awesome
+# dan skrip inline; CSP yang ketat akan memecahkannya. Boleh ditambah kemudian jika aset dikompil sendiri.
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+/admin/*
+  X-Frame-Options: DENY
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store
+
+/cms/*
+  X-Frame-Options: DENY
+  X-Robots-Tag: noindex, nofollow
+
+# Kandungan CMS mesti sentiasa disemak semula supaya perubahan staf cepat kelihatan.
+/content/*
+  Cache-Control: no-cache
