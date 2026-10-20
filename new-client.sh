@@ -118,7 +118,10 @@ replace_all "__GITHUB_REPO__"    "$GITHUB_REPO"    "${TOKFILES[@]}"
 replace_all "__SITE_URL__"       "$SITE_URL"       "${TOKFILES[@]}"
 replace_all "__PRIMARY_COLOR__"  "$PRIMARY_COLOR"  "${TOKFILES[@]}"
 
-# Warna utama dalam HTML/SVG (nilai asal #1A4A9A)
+# Warna utama: disimpan dalam content/site.json (CMS → Warna Tema), staf boleh tukar kemudian
+sed -i.bak "s/\"primary\": \"\"/\"primary\": \"$PRIMARY_COLOR\"/" "$OUT/site/content/site.json" && rm -f "$OUT/site/content/site.json.bak"
+[ -n "$SITE_URL" ] && sed -i.bak "s|\"site_url\": \"\"|\"site_url\": \"${SITE_URL%/}\"|" "$OUT/site/content/site.json" && rm -f "$OUT/site/content/site.json.bak"
+# …dan dalam logo/slide contoh SVG serta nilai asal HTML (nilai asal #1A4A9A)
 for f in "$OUT/site/index.html" "$OUT/site/admin/index.html" "$OUT/site/assets/logo.svg" "$OUT/site/assets/placeholder-slide.svg"; do
   [ -f "$f" ] && sed -i.bak "s/#1[Aa]4[Aa]9[Aa]/$PRIMARY_COLOR/g" "$f" && rm -f "$f.bak"
 done

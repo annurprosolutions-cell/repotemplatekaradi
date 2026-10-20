@@ -19,6 +19,12 @@ backend:
 media_folder: assets/uploads
 public_folder: assets/uploads
 
+# URL artikel dijana dari tajuk: huruf kecil, tanpa simbol (cth. "Gotong-Royong Mac" → gotong-royong-mac)
+slug:
+  encoding: ascii
+  clean_accents: true
+  sanitize_replacement: "-"
+
 collections:
   - name: tetapan
     label: Laman Web
@@ -76,3 +82,145 @@ collections:
               - { label: "Tajuk Program",               name: title, widget: string }
               - { label: "Gambar / Poster",             name: image, widget: image, required: false }
               - { label: "Penerangan / Pautan Permohonan", name: desc, widget: text }
+
+          # ---------------- Jenama, warna & teks (kosong = guna nilai asal) ----------------
+
+          - label: "Jenama & Logo"
+            name: brand
+            widget: object
+            collapsed: true
+            required: false
+            hint: "Kosongkan medan untuk guna nilai asal dari config.js."
+            fields:
+              - { label: "Nama Sistem",            name: name,         widget: string, required: false, hint: "Cth: E-Bintong" }
+              - { label: "Tagline",                name: tagline,      widget: string, required: false }
+              - { label: "Nama Penuh Organisasi",  name: org_name,     widget: string, required: false }
+              - { label: "Nama Ringkas",           name: org_short,    widget: string, required: false }
+              - { label: "Label Pejabat",          name: office_label, widget: string, required: false }
+              - label: "Logo"
+                name: logo
+                widget: image
+                required: false
+                hint: "PNG/SVG empat segi sama (cadangan 512x512, latar telus). Logo ini juga dipakai sebagai favicon."
+
+          - label: "Warna Tema"
+            name: colors
+            widget: object
+            collapsed: true
+            required: false
+            hint: "Isi 1, 2 atau 3 warna. Kosong = warna asal. Warna Utama sahaja pun cukup — warna lain dijana automatik."
+            fields:
+              - { label: "Warna Utama (header, butang, tajuk)",       name: primary,   widget: color, required: false, allowInput: true }
+              - { label: "Warna Kedua (versi gelap / hover)",         name: secondary, widget: color, required: false, allowInput: true }
+              - { label: "Warna Aksen (lencana hero, ikon pengumuman)", name: accent,  widget: color, required: false, allowInput: true }
+
+          - label: "Teks Hero (atas gambar slide)"
+            name: hero
+            widget: object
+            collapsed: true
+            required: false
+            hint: "Boleh guna {{name}} untuk nama sistem. EN kosong = teks Inggeris asal."
+            fields:
+              - { label: "Lencana (BM)",      name: badge,       widget: string, required: false, hint: "Asal: Portal Rasmi" }
+              - { label: "Lencana (EN)",      name: badge_en,    widget: string, required: false, hint: "Asal: Official Portal" }
+              - { label: "Tajuk (BM)",        name: title,       widget: string, required: false, hint: "Asal: Selamat Datang ke {{name}}" }
+              - { label: "Tajuk (EN)",        name: title_en,    widget: string, required: false, hint: "Asal: Welcome to {{name}}" }
+              - { label: "Sub-tajuk (BM)",    name: subtitle,    widget: string, required: false, hint: "Asal: Sistem Interaksi Digital Komuniti" }
+              - { label: "Sub-tajuk (EN)",    name: subtitle_en, widget: string, required: false }
+
+          - label: "Teks Halaman Utama & Footer"
+            name: texts
+            widget: object
+            collapsed: true
+            required: false
+            hint: "Kosong = teks asal."
+            fields:
+              - { label: "Kad 1 — Tajuk (BM)",        name: enter,            widget: string, required: false, hint: "Asal: Masuk Sistem" }
+              - { label: "Kad 1 — Tajuk (EN)",        name: enter_en,         widget: string, required: false }
+              - { label: "Kad 1 — Keterangan (BM)",   name: enter_desc,       widget: string, required: false, hint: "Asal: Aduan, Permohonan & Temujanji" }
+              - { label: "Kad 1 — Keterangan (EN)",   name: enter_desc_en,    widget: string, required: false }
+              - { label: "Kad 2 — Tajuk (BM)",        name: check,            widget: string, required: false, hint: "Asal: Semak Status" }
+              - { label: "Kad 2 — Tajuk (EN)",        name: check_en,         widget: string, required: false }
+              - { label: "Kad 2 — Keterangan (BM)",   name: check_desc,       widget: string, required: false }
+              - { label: "Kad 2 — Keterangan (EN)",   name: check_desc_en,    widget: string, required: false }
+              - { label: "Kad 3 — Tajuk (BM)",        name: info,             widget: string, required: false, hint: "Asal: Info Kerajaan" }
+              - { label: "Kad 3 — Tajuk (EN)",        name: info_en,          widget: string, required: false }
+              - { label: "Kad 3 — Keterangan (BM)",   name: info_desc,        widget: string, required: false }
+              - { label: "Kad 3 — Keterangan (EN)",   name: info_desc_en,     widget: string, required: false }
+              - { label: "Kad 4 — Tajuk (BM)",        name: contact,          widget: string, required: false, hint: "Asal: Hubungi Kami" }
+              - { label: "Kad 4 — Tajuk (EN)",        name: contact_en,       widget: string, required: false }
+              - { label: "Kad 4 — Keterangan (BM)",   name: contact_desc,     widget: string, required: false }
+              - { label: "Kad 4 — Keterangan (EN)",   name: contact_desc_en,  widget: string, required: false }
+              - { label: "Halaman Hubungi — Tajuk (BM)",     name: contact_title,       widget: string, required: false }
+              - { label: "Halaman Hubungi — Tajuk (EN)",     name: contact_title_en,    widget: string, required: false }
+              - { label: "Halaman Hubungi — Sub-tajuk (BM)", name: contact_subtitle,    widget: string, required: false }
+              - { label: "Halaman Hubungi — Sub-tajuk (EN)", name: contact_subtitle_en, widget: string, required: false }
+              - { label: "Footer — Hak Cipta (BM)",   name: footer_rights,    widget: string, required: false, hint: "Asal: Hak Cipta Terpelihara." }
+              - { label: "Footer — Hak Cipta (EN)",   name: footer_rights_en, widget: string, required: false }
+              - { label: "Footer — Nota Tambahan (BM)", name: footer_note,    widget: text,   required: false, hint: "Cth: alamat ringkas atau penafian. Kosong = tidak dipaparkan." }
+              - { label: "Footer — Nota Tambahan (EN)", name: footer_note_en, widget: text,   required: false }
+
+          - label: "Hubungi Kami & Media Sosial"
+            name: contact
+            widget: object
+            collapsed: true
+            required: false
+            hint: "Kosong = guna nilai config.js; kalau itu pun kosong, kad/ikon tersebut disembunyikan."
+            fields:
+              - { label: "Emel Awam",                 name: email,         widget: string, required: false }
+              - { label: "No. WhatsApp (digit + kod negara)", name: whatsapp, widget: string, required: false, hint: "Cth: 60123456789", pattern: ['^[0-9]*$', "Digit sahaja, tanpa + atau -"] }
+              - { label: "No. Telefon Panggilan (digit)",     name: phone,    widget: string, required: false, hint: "Kosong = guna no. WhatsApp", pattern: ['^[0-9]*$', "Digit sahaja, tanpa + atau -"] }
+              - { label: "No. Telefon (cara paparan)", name: phone_display, widget: string, required: false, hint: "Cth: 012-345 6789" }
+              - { label: "Alamat Pejabat",            name: address,       widget: text,   required: false }
+              - { label: "Facebook (URL penuh)",      name: facebook,      widget: string, required: false, hint: "Mesti bermula https://" }
+              - { label: "Instagram (URL penuh)",     name: instagram,     widget: string, required: false }
+              - { label: "TikTok (URL penuh)",        name: tiktok,        widget: string, required: false }
+              - { label: "X / Twitter (URL penuh)",   name: x,             widget: string, required: false }
+              - { label: "YouTube (URL penuh)",       name: youtube,       widget: string, required: false }
+              - { label: "Threads (URL penuh)",       name: threads,       widget: string, required: false }
+              - { label: "Telegram (URL penuh)",      name: telegram,      widget: string, required: false }
+              - { label: "Laman Web Lain (URL penuh)", name: website,      widget: string, required: false }
+
+          - label: "Dasar Privasi"
+            name: privacy
+            widget: object
+            collapsed: true
+            required: false
+            hint: "Kosong = teks dasar privasi asal. Pisahkan perenggan dengan satu baris kosong. **teks** = tebal."
+            fields:
+              - { label: "Dasar Privasi (BM)", name: body,    widget: text, required: false }
+              - { label: "Dasar Privasi (EN)", name: body_en, widget: text, required: false, hint: "Kosong = guna versi BM" }
+
+          - label: "SEO & Perkongsian"
+            name: seo
+            widget: object
+            collapsed: true
+            required: false
+            hint: "Untuk Google dan pratonton bila pautan dikongsi di WhatsApp/Facebook. Dikemas kini dalam ~2 minit selepas simpan."
+            fields:
+              - { label: "Alamat Laman (URL penuh)", name: site_url, widget: string, required: false, hint: "Cth: https://ebintong.my — tanpa / di hujung. Perlu untuk sitemap.", pattern: ['^$|^https?://\S+$', "Mesti bermula dengan https:// (tanpa ruang)"] }
+              - { label: "Penerangan Laman (meta description)", name: description, widget: text, required: false, hint: "1–2 ayat, ~150 aksara. Dipaparkan dalam hasil carian Google." }
+              - { label: "Gambar Perkongsian", name: og_image, widget: image, required: false, hint: "1200x630. Kosong = logo." }
+              - { label: "Kod Pengesahan Google Search Console", name: google_verification, widget: string, required: false, hint: "Hanya kod dalam content=\"...\" (pilihan)" }
+
+  - name: artikel
+    label: Artikel
+    label_singular: Artikel
+    folder: content/artikel
+    extension: md
+    format: frontmatter
+    create: true
+    delete: true
+    slug: "{{slug}}"
+    identifier_field: title
+    summary: "{{title}} — {{date}}"
+    sortable_fields: [date, title]
+    preview_path: "artikel/{{slug}}/"
+    description: "Setiap artikel menjadi halaman sendiri di /artikel/<tajuk>/ (bagus untuk Google). Halaman dijana ~2 minit selepas simpan."
+    fields:
+      - { label: "Tajuk", name: title, widget: string }
+      - { label: "Tarikh", name: date, widget: datetime, date_format: "DD/MM/YYYY", time_format: false, format: "YYYY-MM-DD" }
+      - { label: "Gambar Utama", name: cover, widget: image, required: false, hint: "Landskap, cadangan 1200x630" }
+      - { label: "Ringkasan (SEO)", name: description, widget: text, required: false, hint: "~150 aksara. Dipaparkan di Google & senarai artikel. Kosong = diambil dari awal artikel." }
+      - { label: "Isi Artikel", name: body, widget: markdown }
+      - { label: "Draf (jangan terbitkan lagi)", name: draft, widget: boolean, default: false, required: false }

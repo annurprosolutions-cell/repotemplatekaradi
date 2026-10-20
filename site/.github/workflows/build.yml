@@ -1,0 +1,62 @@
+# =============================================================================
+# Bina laman automatik — SEO, artikel, sitemap, ikon PWA
+# Berjalan setiap kali kandungan berubah (simpan dalam CMS) dan commit semula
+# fail yang dijana. Cloudflare kemudian deploy seperti biasa.
+# Tetapan repo yang diperlukan (sekali sahaja):
+#   Settings → Actions → General → Workflow permissions → "Read and write permissions"
+# =============================================================================
+name: Bina laman (SEO & artikel)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "content/**"
+      - "assets/uploads/**"
+      - "config.js"
+      - "index.html"
+      - ".github/karadi-build/**"
+      - ".github/workflows/build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: karadi-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Pasang alat (marked, yaml)
+        run: npm install --no-save --no-package-lock --no-audit --no-fund --prefix .github/karadi-build marked@16.4.2 yaml@2.9.1
+
+      - name: Pasang sharp (pilihan — untuk ikon PNG)
+        run: npm install --no-save --no-package-lock --no-audit --no-fund --prefix .github/karadi-build sharp@0.35.4 || echo "sharp gagal dipasang — logo asal dipakai sebagai ikon"
+
+      - name: Jana fail
+        run: node .github/karadi-build/build.mjs
+
+      - name: Commit hasil (jika berubah)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for p in index.html manifest.webmanifest robots.txt sitemap.xml artikel assets/icons; do
+            git add -A -- "$p" 2>/dev/null || true
+          done
+          if git diff --cached --quiet; then echo "Tiada perubahan."; exit 0; fi
+          git commit -m "Jana SEO, artikel & ikon (automatik)"
+          for i in 1 2 3; do
+            git push && exit 0
+            git pull --rebase origin main
+          done
+          exit 1

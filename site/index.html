@@ -3,12 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- SEO:START — bahagian ini dijana semula oleh GitHub Actions (.github/karadi-build). Jangan edit di sini. -->
     <title>Portal Rakyat</title>
+    <meta name="theme-color" content="#1A4A9A">
+    <link rel="icon" href="assets/logo.svg">
+    <!-- SEO:END -->
     <!-- Konfigurasi klien (edit config.js SAHAJA) + pembantu jenama -->
     <script src="config.js"></script>
     <script src="assets/brand.js"></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Warna jenama dari CMS (content/site.json → colors) diset sebagai CSS variable oleh brand.js.
+        // Nilai selepas koma = warna asal, dipakai bila CMS tidak menetapkan warna.
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand:  'rgb(var(--brand-rgb, 26 74 154) / <alpha-value>)',
+                        brand2: 'rgb(var(--brand2-rgb, 20 58 122) / <alpha-value>)',
+                        blue: {
+                        50: 'rgb(var(--b50, 239 246 255) / <alpha-value>)',
+                        100: 'rgb(var(--b100, 219 234 254) / <alpha-value>)',
+                        200: 'rgb(var(--b200, 191 219 254) / <alpha-value>)',
+                        300: 'rgb(var(--b300, 147 197 253) / <alpha-value>)',
+                        400: 'rgb(var(--b400, 96 165 250) / <alpha-value>)',
+                        500: 'rgb(var(--b500, 59 130 246) / <alpha-value>)',
+                        600: 'rgb(var(--b600, 37 99 235) / <alpha-value>)',
+                        700: 'rgb(var(--b700, 29 78 216) / <alpha-value>)',
+                        800: 'rgb(var(--b800, 30 64 175) / <alpha-value>)',
+                        900: 'rgb(var(--b900, 30 58 138) / <alpha-value>)'
+                        }
+                    }
+                }
+            }
+        };
+    </script>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- Google Fonts -->
@@ -51,8 +81,8 @@
     <style>
         /* --- OFFICIAL THEME VARIABLES --- */
         :root {
-            --royal-blue: #1A4A9A;
-            --hover-blue: #143a7a;
+            --royal-blue: rgb(var(--brand-rgb, 26 74 154));
+            --hover-blue: rgb(var(--brand2-rgb, 20 58 122));
             --bg-light: #F5F6F8;
             --text-dark: #1f2937;
             --text-muted: #6b7280;
@@ -142,7 +172,7 @@
         .slider-next { right: 16px; }
         /* Ticker Animation */
         .ticker-wrap {
-            width: 100%; overflow: hidden; background: #1e3a8a;
+            width: 100%; overflow: hidden; background: rgb(var(--b900, 30 58 138));
             color: white;
             white-space: nowrap; position: relative;
         }
@@ -153,6 +183,10 @@
             animation: ticker-anim 30s linear infinite;
         }
         .ticker-move:hover { animation-play-state: paused; }
+        /* Warna aksen (pilihan, dari CMS) — hanya aktif bila ditetapkan */
+        html.has-accent .accent-bg { background-color: rgb(var(--accent-rgb)) !important; color: var(--accent-fg) !important; }
+        html.has-accent .accent-text { color: rgb(var(--accent-rgb)) !important; }
+        html.has-accent .accent-border { border-color: rgb(var(--accent-rgb)) !important; }
         .ticker-item { display: inline-block; padding: 0 2rem; font-size: 0.9rem; font-weight: 500; }
         @keyframes ticker-anim {
             0% { transform: translate3d(0, 0, 0); }
@@ -207,7 +241,7 @@
             <div class="absolute inset-0 border-4 border-t-blue-600 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
             <img src="assets/logo.svg" data-brand-logo alt="Logo" class="h-14 w-14 object-contain">
         </div>
-        <h2 class="text-2xl font-bold text-[#1A4A9A] tracking-widest" data-brand="name">Portal Rakyat</h2>
+        <h2 class="text-2xl font-bold text-brand tracking-widest" data-brand="name">Portal Rakyat</h2>
         <p id="loader-text" class="text-sm text-gray-500 mt-2 font-medium animate-pulse" data-i18n="loading_text">Memuatkan Sistem...</p>
     </div>
     <!-- Toast Container -->
@@ -220,7 +254,7 @@
                 <img id="modal-gov-img" src="" class="w-full h-auto max-h-[60vh] object-contain mx-auto" onerror="this.onerror=null;this.src='assets/no-image.svg'">
             </div>
             <div class="p-6 md:p-8 flex-grow">
-                <h2 id="modal-gov-title" class="text-xl md:text-2xl font-bold text-[#1A4A9A] mb-4 border-b pb-2">Title</h2>
+                <h2 id="modal-gov-title" class="text-xl md:text-2xl font-bold text-brand mb-4 border-b pb-2">Title</h2>
                 <div id="modal-gov-desc" class="text-gray-700 text-sm md:text-base leading-relaxed whitespace-pre-wrap font-medium">Description</div>
             </div>
             <div class="p-4 bg-gray-50 border-t flex justify-end sticky bottom-0">
@@ -233,7 +267,7 @@
         <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto relative animate-fade-in flex flex-col">
             <div class="p-6 border-b flex justify-between items-start bg-gray-50">
                 <div>
-                    <h3 class="text-lg font-bold text-[#1A4A9A]">Butiran Sejarah</h3>
+                    <h3 class="text-lg font-bold text-brand">Butiran Sejarah</h3>
                     <p id="hist-modal-cat" class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Kategori</p>
                 </div>
                 <button onclick="closeHistoryModal()" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-times fa-lg"></i></button>
@@ -244,15 +278,15 @@
                     <p id="hist-modal-date" class="text-xs text-gray-500 mt-1">Date</p>
                 </div>
                 <div>
-                    <h4 class="text-xs font-bold text-[#1A4A9A] uppercase border-b pb-1 mb-2">Maklumat Permohonan</h4>
+                    <h4 class="text-xs font-bold text-brand uppercase border-b pb-1 mb-2">Maklumat Permohonan</h4>
                     <div id="hist-modal-content" class="space-y-3 text-sm"></div>
                 </div>
                 <div id="hist-modal-attachments-container" class="hidden">
-                    <h4 class="text-xs font-bold text-[#1A4A9A] uppercase border-b pb-1 mb-2">Lampiran</h4>
+                    <h4 class="text-xs font-bold text-brand uppercase border-b pb-1 mb-2">Lampiran</h4>
                     <div id="hist-modal-attachments" class="space-y-2 text-sm"></div>
                 </div>
                 <div>
-                    <h4 class="text-xs font-bold text-[#1A4A9A] uppercase border-b pb-1 mb-2">Status Terkini</h4>
+                    <h4 class="text-xs font-bold text-brand uppercase border-b pb-1 mb-2">Status Terkini</h4>
                     <div class="text-center py-2">
                         <span id="hist-modal-status" class="inline-block px-4 py-1.5 rounded-full text-sm font-bold shadow-sm">STATUS</span>
                     </div>
@@ -282,10 +316,11 @@
     <div id="modal-privacy-policy" class="fixed inset-0 z-[75] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-opacity duration-300">
         <div class="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto relative animate-fade-in">
             <div class="p-6 border-b flex justify-between items-center sticky top-0 bg-white z-10">
-                <h2 class="text-lg font-bold text-[#1A4A9A]">Dasar Privasi &amp; Perlindungan Data Peribadi</h2>
+                <h2 class="text-lg font-bold text-brand" data-i18n="privacy_title">Dasar Privasi &amp; Perlindungan Data Peribadi</h2>
                 <button onclick="closePrivacyModal()" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-times fa-lg"></i></button>
             </div>
-            <div class="p-6 space-y-4 text-sm text-gray-700 leading-relaxed">
+            <div id="privacy-cms" class="p-6 space-y-4 text-sm text-gray-700 leading-relaxed" style="display:none"></div>
+            <div id="privacy-default" class="p-6 space-y-4 text-sm text-gray-700 leading-relaxed">
                 <p><strong>Data yang dikumpul:</strong> Nama penuh, No. Kad Pengenalan, No. telefon, alamat, e-mel (jika ada), butiran aduan/permohonan, serta dokumen sokongan yang anda muat naik (cth. salinan IC, bukti gambar).</p>
                 <p><strong>Tujuan:</strong> Data ini dikumpul semata-mata untuk memproses aduan, permohonan bantuan, temujanji, jemputan, maklum balas atau pendaftaran sukarelawan yang anda hantar melalui sistem <span data-brand="name">ini</span>, dan untuk menghubungi anda berkaitan status permohonan tersebut.</p>
                 <p><strong>Perkongsian:</strong> Data hanya diakses oleh kakitangan <span data-brand="orgName">pusat khidmat</span> yang bertanggungjawab memproses permohonan anda. Data tidak dijual atau dikongsi dengan pihak ketiga untuk tujuan pemasaran.</p>
@@ -300,7 +335,7 @@
         </div>
     </div>
     <!-- HEADER -->
-    <header class="fixed w-full top-0 z-50 bg-[#1A4A9A] shadow-md border-b border-blue-800">
+    <header class="fixed w-full top-0 z-50 bg-brand shadow-md border-b border-blue-800">
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-3 cursor-pointer" onclick="showView('view-home')">
                 <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center p-1 shadow-sm">
@@ -330,7 +365,7 @@
                     <button class="slider-nav slider-prev opacity-0 group-hover:opacity-100 flex items-center justify-center" onclick="changeSlide(-1)"><i class="fas fa-chevron-left"></i></button>
                     <button class="slider-nav slider-next opacity-0 group-hover:opacity-100 flex items-center justify-center" onclick="changeSlide(1)"><i class="fas fa-chevron-right"></i></button>
                     <div class="absolute bottom-0 left-0 w-full p-6 z-10">
-                          <span class="inline-block py-1 px-3 rounded bg-blue-600 text-white text-xs font-bold uppercase tracking-wide mb-2" data-i18n="tag_official">Portal Rasmi</span>
+                          <span class="inline-block py-1 px-3 rounded bg-blue-600 accent-bg text-white text-xs font-bold uppercase tracking-wide mb-2" data-i18n="tag_official">Portal Rasmi</span>
                         <h2 class="text-3xl md:text-4xl font-bold text-white mb-1 drop-shadow-md" data-i18n="hero_title">Selamat Datang</h2>
                         <p class="text-white text-sm md:text-base opacity-90 max-w-xl" data-i18n="hero_subtitle">Sistem Interaksi Digital Komuniti</p>
                     </div>
@@ -340,8 +375,8 @@
                 </div>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div id="action-enter-system" onclick="checkSystemAccess()" class="card card-hover p-6 cursor-pointer text-center flex flex-col items-center justify-center min-h-[160px] group border-t-4 border-t-[#1A4A9A]">
-                    <div id="icon-enter-system" class="w-14 h-14 mb-4 rounded-full bg-blue-50 flex items-center justify-center text-[#1A4A9A] group-hover:bg-[#1A4A9A] group-hover:text-white transition duration-300">
+                <div id="action-enter-system" onclick="checkSystemAccess()" class="card card-hover p-6 cursor-pointer text-center flex flex-col items-center justify-center min-h-[160px] group border-t-4 border-t-brand">
+                    <div id="icon-enter-system" class="w-14 h-14 mb-4 rounded-full bg-blue-50 flex items-center justify-center text-brand group-hover:bg-brand group-hover:text-white transition duration-300">
                         <i class="fas fa-file-alt text-2xl"></i>
                     </div>
                     <h3 id="text-enter-system" class="text-base font-bold text-gray-800" data-i18n="action_enter">Masuk Sistem</h3>
@@ -388,22 +423,24 @@
                     </div>
                 </div>
             </div>
+            <!-- ARTIKEL:START — senarai artikel terkini dijana oleh GitHub Actions. Jangan edit di sini. -->
+            <!-- ARTIKEL:END -->
         </div>
         <!-- VIEW: AUTH SELECTION -->
         <div id="view-auth" class="view-section hidden pt-6 pb-20">
             <div class="max-w-4xl mx-auto">
                 <div class="flex items-center mb-6">
-                    <button onclick="showView('view-home')" class="text-gray-500 mr-4 hover:text-[#1A4A9A] transition bg-white p-2 rounded-full shadow-sm"><i class="fas fa-arrow-left"></i></button>
-                    <h2 class="text-xl font-bold text-[#1A4A9A]">Akses Sistem</h2>
+                    <button onclick="showView('view-home')" class="text-gray-500 mr-4 hover:text-brand transition bg-white p-2 rounded-full shadow-sm"><i class="fas fa-arrow-left"></i></button>
+                    <h2 class="text-xl font-bold text-brand">Akses Sistem</h2>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div class="card p-8 border-t-4 border-t-[#1A4A9A]">
+                    <div class="card p-8 border-t-4 border-t-brand">
                         <div class="text-center mb-6">
                             <h3 class="text-lg font-bold text-gray-800">Ahli Berdaftar</h3>
                             <p class="text-xs text-gray-500">Log masuk untuk jejak sejarah aduan anda</p>
                         </div>
                         <div class="flex border border-gray-200 rounded-lg p-1 mb-6 bg-gray-50">
-                            <button onclick="toggleAuthMode('login')" id="tab-login" class="flex-1 py-2 text-sm font-bold rounded shadow-sm bg-white text-[#1A4A9A]">Log Masuk</button>
+                            <button onclick="toggleAuthMode('login')" id="tab-login" class="flex-1 py-2 text-sm font-bold rounded shadow-sm bg-white text-brand">Log Masuk</button>
                             <button onclick="toggleAuthMode('signup')" id="tab-signup" class="flex-1 py-2 text-sm font-bold rounded text-gray-500 hover:text-gray-700">Daftar Baru</button>
                         </div>
                         <form id="form-login" class="space-y-4" onsubmit="handleLogin(event)">
@@ -448,7 +485,7 @@
         <div id="view-dashboard" class="view-section hidden space-y-6">
             <div class="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                 <div>
-                    <h2 class="text-xl font-bold text-[#1A4A9A]" data-i18n="select_service_title">Pilih Kategori Perkhidmatan</h2>
+                    <h2 class="text-xl font-bold text-brand" data-i18n="select_service_title">Pilih Kategori Perkhidmatan</h2>
                     <p class="text-xs text-gray-500" id="welcome-msg" data-i18n="select_service_desc">Sila pilih jenis perkhidmatan yang diperlukan</p>
                 </div>
                 <div class="flex items-center gap-2">
@@ -471,8 +508,8 @@
             <div class="card p-6 md:p-8 max-w-2xl mx-auto">
                 <div class="flex items-center justify-between mb-6 border-b border-gray-200 pb-4">
                     <div class="flex items-center">
-                        <button onclick="showView('view-dashboard')" class="text-gray-500 mr-4 hover:text-[#1A4A9A] transition bg-gray-100 p-2 rounded-full"><i class="fas fa-arrow-left"></i></button>
-                        <h2 class="text-xl font-bold text-[#1A4A9A]">Kemaskini Profil</h2>
+                        <button onclick="showView('view-dashboard')" class="text-gray-500 mr-4 hover:text-brand transition bg-gray-100 p-2 rounded-full"><i class="fas fa-arrow-left"></i></button>
+                        <h2 class="text-xl font-bold text-brand">Kemaskini Profil</h2>
                     </div>
                 </div>
                 <form id="form-edit-profile" class="space-y-5" onsubmit="handleUpdateProfile(event)">
@@ -507,8 +544,8 @@
         <div id="view-history" class="view-section hidden">
             <div class="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                 <div class="flex items-center">
-                    <button onclick="showView('view-dashboard')" class="text-gray-500 mr-4 hover:text-[#1A4A9A] transition bg-gray-100 p-2 rounded-full"><i class="fas fa-arrow-left"></i></button>
-                    <h2 class="text-xl font-bold text-[#1A4A9A]">Sejarah Aduan Saya</h2>
+                    <button onclick="showView('view-dashboard')" class="text-gray-500 mr-4 hover:text-brand transition bg-gray-100 p-2 rounded-full"><i class="fas fa-arrow-left"></i></button>
+                    <h2 class="text-xl font-bold text-brand">Sejarah Aduan Saya</h2>
                 </div>
             </div>
             <div id="history-list" class="space-y-4">
@@ -520,16 +557,16 @@
             <div class="card p-6 md:p-8">
                 <div class="flex items-center justify-between mb-8 border-b border-gray-200 pb-4">
                     <div class="flex items-center">
-                        <button onclick="showView('view-dashboard')" class="text-gray-500 mr-4 hover:text-[#1A4A9A] transition bg-gray-100 p-2 rounded-full"><i class="fas fa-arrow-left"></i></button>
+                        <button onclick="showView('view-dashboard')" class="text-gray-500 mr-4 hover:text-brand transition bg-gray-100 p-2 rounded-full"><i class="fas fa-arrow-left"></i></button>
                         <div>
-                             <h2 class="text-xl font-bold text-[#1A4A9A]" data-i18n="form_header">Borang Permohonan</h2>
+                             <h2 class="text-xl font-bold text-brand" data-i18n="form_header">Borang Permohonan</h2>
                              <p id="form-title" class="text-sm text-gray-500 font-medium uppercase tracking-wide mt-1">CATEGORY</p>
                         </div>
                     </div>
                 </div>
                 <form id="submissionForm" onsubmit="handleFormSubmit(event)" class="space-y-6 max-w-3xl mx-auto">
                     <div class="bg-blue-50/50 p-4 rounded-lg border border-blue-100">
-                        <h3 class="text-[#1A4A9A] text-sm font-bold uppercase border-b border-blue-200 pb-2 mb-4"><i class="fas fa-user mr-2"></i><span data-i18n="form_section_a">A. Maklumat Asas</span></h3>
+                        <h3 class="text-brand text-sm font-bold uppercase border-b border-blue-200 pb-2 mb-4"><i class="fas fa-user mr-2"></i><span data-i18n="form_section_a">A. Maklumat Asas</span></h3>
                         <div class="mb-4"><label data-i18n="form_name">Nama Penuh</label><input type="text" name="nama" required class="focus:ring-2 focus:ring-blue-200"></div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                             <div><label data-i18n="form_ic">No. Kad Pengenalan</label><input type="text" name="ic" id="input-ic" data-i18n-placeholder="placeholder_ic" placeholder="Contoh: 901236129856" pattern="\d{12}" title="Sila masukkan 12 digit tanpa sempang" required></div>
@@ -560,7 +597,7 @@
                 <p class="text-gray-600 mt-2" data-i18n="success_subtitle">Maklumat anda telah selamat direkodkan ke dalam pangkalan data.</p>
                 <div class="bg-gray-50 p-6 rounded-lg border border-gray-200 mt-8">
                     <p class="text-xs text-gray-500 uppercase tracking-widest font-bold mb-2" data-i18n="ref_no">Nombor Rujukan</p>
-                    <div class="text-3xl font-mono font-bold text-[#1A4A9A] tracking-wider" id="output-refNo">----------</div>
+                    <div class="text-3xl font-mono font-bold text-brand tracking-wider" id="output-refNo">----------</div>
                     <p id="guest-warning" class="text-xs text-red-500 mt-3 font-bold hidden">PERHATIAN: Sila salin nombor ini. Sebagai Tetamu, ini adalah satu-satunya cara untuk semak status.</p>
                     <p id="member-note" class="text-xs text-blue-500 mt-3 hidden">Direkodkan dalam sejarah akaun anda.</p>
                 </div>
@@ -590,34 +627,54 @@
         <div id="view-contact" class="view-section hidden">
             <div class="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                 <div>
-                    <h2 class="text-xl font-bold text-[#1A4A9A]">Hubungi Kami</h2>
-                    <p class="text-xs text-gray-500">Saluran Komunikasi Rasmi</p>
+                    <h2 class="text-xl font-bold text-brand" data-i18n="contact_title">Hubungi Kami</h2>
+                    <p class="text-xs text-gray-500" data-i18n="contact_subtitle">Saluran Komunikasi Rasmi</p>
                 </div>
                 <button onclick="showView('view-home')" class="text-gray-400 hover:text-red-500 transition px-2"><i class="fas fa-times fa-lg"></i></button>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                 <a href="#" data-brand-href="mailto" class="card card-hover p-8 flex flex-col items-center justify-center text-center group border-t-4 border-red-500">
+                 <a href="#" data-brand-href="mailto" data-brand-show="email" class="card card-hover p-8 flex flex-col items-center justify-center text-center group border-t-4 border-red-500">
                     <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition"><i class="fas fa-envelope text-2xl"></i></div>
-                    <h3 class="font-bold text-lg text-gray-800 mb-2">Emel Rasmi</h3>
+                    <h3 class="font-bold text-lg text-gray-800 mb-2" data-i18n="contact_email">Emel Rasmi</h3>
                     <p class="text-sm text-gray-600 font-medium break-all" data-brand="email"></p>
                 </a>
-                <a href="#" data-brand-href="wa" target="_blank" rel="noopener noreferrer" class="card card-hover p-8 flex flex-col items-center justify-center text-center group border-t-4 border-green-500">
+                <a href="#" data-brand-href="wa" data-brand-show="whatsapp" target="_blank" rel="noopener noreferrer" class="card card-hover p-8 flex flex-col items-center justify-center text-center group border-t-4 border-green-500">
                     <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition"><i class="fab fa-whatsapp text-3xl"></i></div>
                     <h3 class="font-bold text-lg text-gray-800 mb-2">WhatsApp</h3>
                     <p class="text-sm text-gray-600 font-medium" data-brand="phoneDisplay"></p>
                 </a>
-                <a href="#" data-brand-href="tel" class="card card-hover p-8 flex flex-col items-center justify-center text-center group border-t-4 border-blue-500">
+                <a href="#" data-brand-href="tel" data-brand-show="phone" class="card card-hover p-8 flex flex-col items-center justify-center text-center group border-t-4 border-blue-500">
                     <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition"><i class="fas fa-phone-alt text-2xl"></i></div>
-                    <h3 class="font-bold text-lg text-gray-800 mb-2">Panggilan</h3>
+                    <h3 class="font-bold text-lg text-gray-800 mb-2" data-i18n="contact_call">Panggilan</h3>
                     <p class="text-sm text-gray-600 font-medium" data-brand="phoneDisplay"></p>
                 </a>
+            </div>
+            <div data-brand-show="address" class="card p-6 mt-6 flex items-start gap-4" style="display:none">
+                <div class="w-12 h-12 shrink-0 bg-blue-100 text-brand rounded-full flex items-center justify-center"><i class="fas fa-map-marker-alt text-xl"></i></div>
+                <div>
+                    <h3 class="font-bold text-gray-800 mb-1" data-i18n="contact_address">Alamat Pejabat</h3>
+                    <p class="text-sm text-gray-600 whitespace-pre-line" data-brand="address"></p>
+                </div>
+            </div>
+            <div data-brand-show="social" class="card p-6 mt-6 text-center" style="display:none">
+                <h3 class="font-bold text-gray-800 mb-4" data-i18n="contact_social">Ikuti Kami</h3>
+                <div class="flex flex-wrap justify-center gap-3">
+                    <a data-social="facebook" style="display:none" target="_blank" rel="noopener noreferrer" aria-label="Facebook" class="w-11 h-11 rounded-full bg-gray-100 hover:bg-brand hover:text-white text-gray-700 flex items-center justify-center transition"><i class="fab fa-facebook-f"></i></a>
+                    <a data-social="instagram" style="display:none" target="_blank" rel="noopener noreferrer" aria-label="Instagram" class="w-11 h-11 rounded-full bg-gray-100 hover:bg-brand hover:text-white text-gray-700 flex items-center justify-center transition"><i class="fab fa-instagram"></i></a>
+                    <a data-social="tiktok" style="display:none" target="_blank" rel="noopener noreferrer" aria-label="TikTok" class="w-11 h-11 rounded-full bg-gray-100 hover:bg-brand hover:text-white text-gray-700 flex items-center justify-center transition"><i class="fab fa-tiktok"></i></a>
+                    <a data-social="x" style="display:none" target="_blank" rel="noopener noreferrer" aria-label="X" class="w-11 h-11 rounded-full bg-gray-100 hover:bg-brand hover:text-white text-gray-700 flex items-center justify-center transition"><i class="fab fa-twitter"></i></a>
+                    <a data-social="youtube" style="display:none" target="_blank" rel="noopener noreferrer" aria-label="YouTube" class="w-11 h-11 rounded-full bg-gray-100 hover:bg-brand hover:text-white text-gray-700 flex items-center justify-center transition"><i class="fab fa-youtube"></i></a>
+                    <a data-social="threads" style="display:none" target="_blank" rel="noopener noreferrer" aria-label="Threads" class="w-11 h-11 rounded-full bg-gray-100 hover:bg-brand hover:text-white text-gray-700 flex items-center justify-center transition"><i class="fas fa-at"></i></a>
+                    <a data-social="telegram" style="display:none" target="_blank" rel="noopener noreferrer" aria-label="Telegram" class="w-11 h-11 rounded-full bg-gray-100 hover:bg-brand hover:text-white text-gray-700 flex items-center justify-center transition"><i class="fab fa-telegram-plane"></i></a>
+                    <a data-social="website" style="display:none" target="_blank" rel="noopener noreferrer" aria-label="Laman web" class="w-11 h-11 rounded-full bg-gray-100 hover:bg-brand hover:text-white text-gray-700 flex items-center justify-center transition"><i class="fas fa-globe"></i></a>
+                </div>
             </div>
         </div>
         <!-- VIEW: GOV INFO -->
         <div id="view-gov-info" class="view-section hidden">
             <div class="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                 <div>
-                    <h2 class="text-xl font-bold text-[#1A4A9A]">Info Kerajaan & Bantuan</h2>
+                    <h2 class="text-xl font-bold text-brand">Info Kerajaan & Bantuan</h2>
                     <p class="text-xs text-gray-500">Maklumat terkini biasiswa, pendidikan dan inisiatif.</p>
                 </div>
                 <button onclick="showView('view-home')" class="text-gray-400 hover:text-red-500 transition px-2"><i class="fas fa-times fa-lg"></i></button>
@@ -631,6 +688,17 @@
         <div class="container mx-auto px-4 relative">
             <p class="font-bold text-white mb-2 tracking-wide">SISTEM <span data-brand="name">PORTAL</span></p>
             <p>&copy; <span data-brand="year">2025</span> <span data-brand="orgName"></span>. <span data-i18n="footer_rights">Hak Cipta Terpelihara.</span></p>
+            <p id="footer-note" class="mt-2 whitespace-pre-line" style="display:none"></p>
+            <div data-brand-show="social" class="mt-4 flex justify-center gap-4 text-base" style="display:none">
+                <a data-social="facebook" style="display:none" target="_blank" rel="noopener noreferrer" aria-label="Facebook" class="hover:text-white transition"><i class="fab fa-facebook-f"></i></a>
+                <a data-social="instagram" style="display:none" target="_blank" rel="noopener noreferrer" aria-label="Instagram" class="hover:text-white transition"><i class="fab fa-instagram"></i></a>
+                <a data-social="tiktok" style="display:none" target="_blank" rel="noopener noreferrer" aria-label="TikTok" class="hover:text-white transition"><i class="fab fa-tiktok"></i></a>
+                <a data-social="x" style="display:none" target="_blank" rel="noopener noreferrer" aria-label="X" class="hover:text-white transition"><i class="fab fa-twitter"></i></a>
+                <a data-social="youtube" style="display:none" target="_blank" rel="noopener noreferrer" aria-label="YouTube" class="hover:text-white transition"><i class="fab fa-youtube"></i></a>
+                <a data-social="threads" style="display:none" target="_blank" rel="noopener noreferrer" aria-label="Threads" class="hover:text-white transition"><i class="fas fa-at"></i></a>
+                <a data-social="telegram" style="display:none" target="_blank" rel="noopener noreferrer" aria-label="Telegram" class="hover:text-white transition"><i class="fab fa-telegram-plane"></i></a>
+                <a data-social="website" style="display:none" target="_blank" rel="noopener noreferrer" aria-label="Laman web" class="hover:text-white transition"><i class="fas fa-globe"></i></a>
+            </div>
             <div class="mt-4 space-x-4">
                 <a href="javascript:void(0)" onclick="openPrivacyModal()" class="hover:text-white transition" data-i18n="footer_privacy">Dasar Privasi</a>
                 <a href="#" class="hover:text-white transition" data-i18n="footer_terms">Terma & Syarat</a>
@@ -711,7 +779,15 @@
                 'footer_rights': 'Hak Cipta Terpelihara.',
                 'footer_privacy': 'Dasar Privasi',
                 'footer_terms': 'Terma & Syarat',
-                'footer_sitemap': 'Peta Laman'
+                'footer_sitemap': 'Peta Laman',
+                'contact_title': 'Hubungi Kami',
+                'contact_subtitle': 'Saluran Komunikasi Rasmi',
+                'contact_email': 'Emel Rasmi',
+                'contact_call': 'Panggilan',
+                'contact_address': 'Alamat Pejabat',
+                'contact_social': 'Ikuti Kami',
+                'privacy_title': 'Dasar Privasi & Perlindungan Data Peribadi',
+                'footer_note': ''
             },
             'en': {
                 'loading_text': 'Loading System...',
@@ -772,23 +848,64 @@
                 'footer_rights': 'All Rights Reserved.',
                 'footer_privacy': 'Privacy Policy',
                 'footer_terms': 'Terms & Conditions',
-                'footer_sitemap': 'Sitemap'
+                'footer_sitemap': 'Sitemap',
+                'contact_title': 'Contact Us',
+                'contact_subtitle': 'Official Communication Channels',
+                'contact_email': 'Official Email',
+                'contact_call': 'Call',
+                'contact_address': 'Office Address',
+                'contact_social': 'Follow Us',
+                'privacy_title': 'Privacy Policy & Personal Data Protection',
+                'footer_note': ''
             }
         };
 
         // --- Jenama dalam terjemahan (nama sistem & label pejabat dari config.js) ---
+        // Teks yang boleh diubah dalam CMS (content/site.json). Medan kosong = teks asal di atas.
+        // Bahagian CMS → { medan CMS: kunci terjemahan }. Medan "<nama>_en" = versi Inggeris.
+        const CMS_TEXT_MAP = {
+            hero:  { badge: 'tag_official', title: 'hero_title', subtitle: 'hero_subtitle' },
+            texts: { enter: 'action_enter', enter_desc: 'action_enter_desc', check: 'action_check', check_desc: 'action_check_desc',
+                     info: 'action_info', info_desc: 'action_info_desc', contact: 'action_contact', contact_desc: 'action_contact_desc',
+                     contact_title: 'contact_title', contact_subtitle: 'contact_subtitle',
+                     footer_rights: 'footer_rights', footer_note: 'footer_note' }
+        };
+        const I18N_DEFAULT = JSON.parse(JSON.stringify(translations));
         function applyBrandToTranslations() {
-            Object.keys(translations).forEach(lang => {
+            const site = window.KARADI_SITE || {};
+            const fill = (v) => String(v).replace(/\{\{name\}\}/g, BRAND.name || "Portal").replace(/\{\{office\}\}/g, BRAND.officeLabel || "");
+            Object.keys(I18N_DEFAULT).forEach(lang => {
                 const t = translations[lang];
-                Object.keys(t).forEach(k => {
-                    if (typeof t[k] === "string") t[k] = t[k].replace(/\{\{name\}\}/g, BRAND.name || "Portal").replace(/\{\{office\}\}/g, BRAND.officeLabel || "");
+                Object.keys(I18N_DEFAULT[lang]).forEach(k => { t[k] = fill(I18N_DEFAULT[lang][k]); });
+                Object.keys(CMS_TEXT_MAP).forEach(sec => {
+                    const src = (site[sec] && typeof site[sec] === 'object') ? site[sec] : {};
+                    Object.keys(CMS_TEXT_MAP[sec]).forEach(f => {
+                        let v = String(src[lang === 'ms' ? f : f + '_en'] || '').trim();
+                        // Tiada teks Inggeris asal (cth. nota footer) → guna versi BM
+                        if (!v && lang !== 'ms' && !I18N_DEFAULT[lang][CMS_TEXT_MAP[sec][f]]) v = String(src[f] || '').trim();
+                        if (v) t[CMS_TEXT_MAP[sec][f]] = fill(v);
+                    });
                 });
             });
             document.querySelectorAll("[data-i18n]").forEach(el => {
                 const key = el.getAttribute("data-i18n");
                 if (translations[currentLang][key]) el.innerText = translations[currentLang][key];
             });
+            const note = document.getElementById('footer-note');
+            if (note) { note.innerText = translations[currentLang].footer_note || ''; note.style.display = note.innerText ? '' : 'none'; }
+            renderPrivacy();
         }
+        // Dasar privasi dari CMS (privacy.body / privacy.body_en). Kosong = teks asal dalam HTML.
+        function renderPrivacy() {
+            const pv = (window.KARADI_SITE || {}).privacy || {};
+            const body = String((currentLang === 'en' && pv.body_en) || pv.body || '').trim();
+            const box = document.getElementById('privacy-cms'), def = document.getElementById('privacy-default');
+            if (!box || !def) return;
+            if (!body) { box.style.display = 'none'; def.style.display = ''; return; }
+            box.innerHTML = body.split(/\n\s*\n/).map(par => '<p>' + escapeHtml(par.trim()).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>') + '</p>').join('');
+            box.style.display = ''; def.style.display = 'none';
+        }
+        document.addEventListener('karadi:site', () => { applyBrandToTranslations(); if (typeof updateHomeUI === 'function') updateHomeUI(); });
         // --- XSS-safe render helpers ---
         function escapeHtml(str) {
             const div = document.createElement('div');
@@ -837,6 +954,9 @@
                 const key = el.getAttribute('data-i18n-placeholder');
                 if(translations[currentLang][key]) el.placeholder = translations[currentLang][key];
             });
+            const note = document.getElementById('footer-note');
+            if (note) { note.innerText = translations[currentLang].footer_note || ''; note.style.display = note.innerText ? '' : 'none'; }
+            renderPrivacy();
             updateHomeUI();
             if(!document.getElementById('view-dashboard').classList.contains('hidden')) updateDashboardUI();
         }
@@ -852,12 +972,12 @@
             document.getElementById('form-forgot-pass').classList.add('hidden');
             if (mode === 'login') {
                 loginForm.classList.remove('hidden'); signupForm.classList.add('hidden');
-                btnLogin.classList.add('bg-white', 'text-[#1A4A9A]', 'shadow-sm'); btnLogin.classList.remove('text-gray-500');
-                btnSignup.classList.remove('bg-white', 'text-[#1A4A9A]', 'shadow-sm'); btnSignup.classList.add('text-gray-500');
+                btnLogin.classList.add('bg-white', 'text-brand', 'shadow-sm'); btnLogin.classList.remove('text-gray-500');
+                btnSignup.classList.remove('bg-white', 'text-brand', 'shadow-sm'); btnSignup.classList.add('text-gray-500');
             } else {
                 loginForm.classList.add('hidden'); signupForm.classList.remove('hidden');
-                btnSignup.classList.add('bg-white', 'text-[#1A4A9A]', 'shadow-sm'); btnSignup.classList.remove('text-gray-500');
-                btnLogin.classList.remove('bg-white', 'text-[#1A4A9A]', 'shadow-sm'); btnLogin.classList.add('text-gray-500');
+                btnSignup.classList.add('bg-white', 'text-brand', 'shadow-sm'); btnSignup.classList.remove('text-gray-500');
+                btnLogin.classList.remove('bg-white', 'text-brand', 'shadow-sm'); btnLogin.classList.add('text-gray-500');
             }
         }
         function showForgotPassword() {
@@ -965,12 +1085,12 @@
         }
         // --- MODULE CONFIG ---
         const categoryConfig = {
-            'Jemputan': { fields: `<h3 class="text-[#1A4A9A] text-sm font-bold uppercase border-b border-blue-200 pb-2 mb-4 mt-6"><i class="fas fa-envelope mr-2"></i>B. Butiran Jemputan</h3><div class="mb-4"><label>Nama Penganjur</label><input type="text" name="detail_1" required></div><div class="mb-4"><label>Nama Program</label><input type="text" name="detail_2" required></div><div class="grid grid-cols-2 gap-4 mb-4"><div><label>Tarikh & Masa</label><input type="datetime-local" name="date_time" required></div><div><label>Jenis Jemputan</label><select name="option_select"><option>YB Hadir</option><option>Wakil</option><option>Perasmian</option></select></div></div><div class="mb-4"><label>Lokasi Program</label><input type="text" name="location" required></div><div class="mb-4"><label>Muat Naik Surat Jemputan (PDF/Imej)</label><input type="file" multiple accept=".pdf,image/*" class="border p-2 rounded bg-white w-full"><p class="text-xs text-gray-400 mt-1">Boleh muat naik lebih dari satu fail.</p></div>` },
-            'Permohonan': { fields: `<h3 class="text-[#1A4A9A] text-sm font-bold uppercase border-b border-blue-200 pb-2 mb-4 mt-6"><i class="fas fa-file-invoice mr-2"></i>B. Butiran Permohonan</h3><div class="mb-4"><label>Jenis Permohonan</label><select name="option_select"><option>Bantuan Kewangan Kecil</option><option>Sumbangan Barangan</option><option>Surat Sokongan</option><option>Bantuan Kecemasan</option></select></div><div class="mb-4"><label>Amaun / Senarai Barang</label><input type="text" name="detail_1" placeholder="RM xxx atau Senarai"></div><div class="mb-4"><label>Tujuan & Justifikasi</label><textarea name="detail_2" rows="3"></textarea></div><div class="mb-4"><label>Dokumen Sokongan</label><input type="file" multiple class="border p-2 rounded bg-white w-full"><p class="text-xs text-gray-400 mt-1">Sertakan salinan IC, Bil Utiliti atau surat berkaitan.</p></div>` },
-            'Aduan': { fields: `<h3 class="text-[#1A4A9A] text-sm font-bold uppercase border-b border-blue-200 pb-2 mb-4 mt-6"><i class="fas fa-exclamation-circle mr-2"></i>B. Butiran Aduan</h3><div class="mb-4"><label>Kategori Aduan</label><select name="option_select"><option>Infrastruktur (Jalan/Lampu)</option><option>Kebersihan / Sampah</option><option>Keselamatan Komuniti</option><option>Banjir / Parit</option><option>Sosial</option><option>Lain-lain</option></select></div><div class="mb-4"><label>Lokasi Kejadian</label><input type="text" name="location" placeholder="Alamat penuh lokasi kejadian" required></div><div class="mb-4"><label>Perincian Aduan</label><textarea name="detail_1" rows="4" placeholder="Sila terangkan aduan anda secara terperinci..." required></textarea></div><div class="mb-4"><label>Tahap Desakan</label><select name="urgency"><option>Biasa</option><option>Sederhana</option><option>Kritikal</option></select></div><div class="mb-4"><label>Bukti Gambar</label><input type="file" multiple accept="image/*" class="border p-2 rounded bg-white w-full"></div>` },
-            'Temujanji': { fields: `<h3 class="text-[#1A4A9A] text-sm font-bold uppercase border-b border-blue-200 pb-2 mb-4 mt-6"><i class="fas fa-calendar-alt mr-2"></i>B. Butiran Temujanji</h3><div class="mb-4"><label>Tujuan Pertemuan</label><input type="text" name="detail_1" required></div><div class="grid grid-cols-2 gap-4 mb-4"><div><label>Tarikh Pilihan</label><input type="date" name="date_pref" required></div><div><label>Sesi Masa</label><select name="time_slot"><option>Pagi (9:00 - 12:00)</option><option>Petang (14:00 - 17:00)</option></select></div></div>` },
-            'Maklum Balas': { fields: `<h3 class="text-[#1A4A9A] text-sm font-bold uppercase border-b border-blue-200 pb-2 mb-4 mt-6">B. Butiran Cadangan</h3><div class="mb-4"><label>Tajuk Cadangan</label><input type="text" name="option_select"></div><div class="mb-4"><label>Huraian & Kesan Kepada Komuniti</label><textarea name="detail_1" rows="4"></textarea></div><div class="mb-4"><label>Lampiran (Gambar/PDF)</label><input type="file" multiple accept=".pdf,image/*" class="border p-2 rounded bg-white w-full"></div>` },
-            'Sukarelawan': { fields: `<h3 class="text-[#1A4A9A] text-sm font-bold uppercase border-b border-blue-200 pb-2 mb-4 mt-6">B. Profil Sukarelawan</h3><div class="mb-4"><label>Minat Utama</label><select name="option_select"><option>Gotong Royong</option><option>Bantuan Bencana</option><option>Pengurusan Acara</option><option>Pendidikan / Tuisyen</option></select></div><div class="mb-4"><label>Kemahiran Khas</label><input type="text" name="detail_1" placeholder="Contoh: Memasak, Memandu Lori, Perubatan"></div><div class="mb-4"><label>Ketersediaan</label><input type="text" name="detail_2" placeholder="Hujung Minggu Sahaja / Bila-bila"></div>` }
+            'Jemputan': { fields: `<h3 class="text-brand text-sm font-bold uppercase border-b border-blue-200 pb-2 mb-4 mt-6"><i class="fas fa-envelope mr-2"></i>B. Butiran Jemputan</h3><div class="mb-4"><label>Nama Penganjur</label><input type="text" name="detail_1" required></div><div class="mb-4"><label>Nama Program</label><input type="text" name="detail_2" required></div><div class="grid grid-cols-2 gap-4 mb-4"><div><label>Tarikh & Masa</label><input type="datetime-local" name="date_time" required></div><div><label>Jenis Jemputan</label><select name="option_select"><option>YB Hadir</option><option>Wakil</option><option>Perasmian</option></select></div></div><div class="mb-4"><label>Lokasi Program</label><input type="text" name="location" required></div><div class="mb-4"><label>Muat Naik Surat Jemputan (PDF/Imej)</label><input type="file" multiple accept=".pdf,image/*" class="border p-2 rounded bg-white w-full"><p class="text-xs text-gray-400 mt-1">Boleh muat naik lebih dari satu fail.</p></div>` },
+            'Permohonan': { fields: `<h3 class="text-brand text-sm font-bold uppercase border-b border-blue-200 pb-2 mb-4 mt-6"><i class="fas fa-file-invoice mr-2"></i>B. Butiran Permohonan</h3><div class="mb-4"><label>Jenis Permohonan</label><select name="option_select"><option>Bantuan Kewangan Kecil</option><option>Sumbangan Barangan</option><option>Surat Sokongan</option><option>Bantuan Kecemasan</option></select></div><div class="mb-4"><label>Amaun / Senarai Barang</label><input type="text" name="detail_1" placeholder="RM xxx atau Senarai"></div><div class="mb-4"><label>Tujuan & Justifikasi</label><textarea name="detail_2" rows="3"></textarea></div><div class="mb-4"><label>Dokumen Sokongan</label><input type="file" multiple class="border p-2 rounded bg-white w-full"><p class="text-xs text-gray-400 mt-1">Sertakan salinan IC, Bil Utiliti atau surat berkaitan.</p></div>` },
+            'Aduan': { fields: `<h3 class="text-brand text-sm font-bold uppercase border-b border-blue-200 pb-2 mb-4 mt-6"><i class="fas fa-exclamation-circle mr-2"></i>B. Butiran Aduan</h3><div class="mb-4"><label>Kategori Aduan</label><select name="option_select"><option>Infrastruktur (Jalan/Lampu)</option><option>Kebersihan / Sampah</option><option>Keselamatan Komuniti</option><option>Banjir / Parit</option><option>Sosial</option><option>Lain-lain</option></select></div><div class="mb-4"><label>Lokasi Kejadian</label><input type="text" name="location" placeholder="Alamat penuh lokasi kejadian" required></div><div class="mb-4"><label>Perincian Aduan</label><textarea name="detail_1" rows="4" placeholder="Sila terangkan aduan anda secara terperinci..." required></textarea></div><div class="mb-4"><label>Tahap Desakan</label><select name="urgency"><option>Biasa</option><option>Sederhana</option><option>Kritikal</option></select></div><div class="mb-4"><label>Bukti Gambar</label><input type="file" multiple accept="image/*" class="border p-2 rounded bg-white w-full"></div>` },
+            'Temujanji': { fields: `<h3 class="text-brand text-sm font-bold uppercase border-b border-blue-200 pb-2 mb-4 mt-6"><i class="fas fa-calendar-alt mr-2"></i>B. Butiran Temujanji</h3><div class="mb-4"><label>Tujuan Pertemuan</label><input type="text" name="detail_1" required></div><div class="grid grid-cols-2 gap-4 mb-4"><div><label>Tarikh Pilihan</label><input type="date" name="date_pref" required></div><div><label>Sesi Masa</label><select name="time_slot"><option>Pagi (9:00 - 12:00)</option><option>Petang (14:00 - 17:00)</option></select></div></div>` },
+            'Maklum Balas': { fields: `<h3 class="text-brand text-sm font-bold uppercase border-b border-blue-200 pb-2 mb-4 mt-6">B. Butiran Cadangan</h3><div class="mb-4"><label>Tajuk Cadangan</label><input type="text" name="option_select"></div><div class="mb-4"><label>Huraian & Kesan Kepada Komuniti</label><textarea name="detail_1" rows="4"></textarea></div><div class="mb-4"><label>Lampiran (Gambar/PDF)</label><input type="file" multiple accept=".pdf,image/*" class="border p-2 rounded bg-white w-full"></div>` },
+            'Sukarelawan': { fields: `<h3 class="text-brand text-sm font-bold uppercase border-b border-blue-200 pb-2 mb-4 mt-6">B. Profil Sukarelawan</h3><div class="mb-4"><label>Minat Utama</label><select name="option_select"><option>Gotong Royong</option><option>Bantuan Bencana</option><option>Pengurusan Acara</option><option>Pendidikan / Tuisyen</option></select></div><div class="mb-4"><label>Kemahiran Khas</label><input type="text" name="detail_1" placeholder="Contoh: Memasak, Memandu Lori, Perubatan"></div><div class="mb-4"><label>Ketersediaan</label><input type="text" name="detail_2" placeholder="Hujung Minggu Sahaja / Bila-bila"></div>` }
         };
         // --- INIT DATA ---
         // Kandungan laman (slide, pengumuman, info pejabat, info kerajaan, maintenance,
@@ -1001,7 +1121,9 @@
                 const before = CONTENT_KEYS.map(k => localStorage.getItem(k)).join('|');
                 const response = await fetch('content/site.json', { cache: 'no-cache' });
                 if (!response.ok) throw new Error('HTTP ' + response.status);
-                applySiteContent(await response.json());
+                const siteData = await response.json();
+                applySiteContent(siteData);
+                if (window.KARADI_applySite) window.KARADI_applySite(siteData);
                 const changed = before !== CONTENT_KEYS.map(k => localStorage.getItem(k)).join('|');
                 if (!changed && fetchGlobalConfig.done) return;
                 fetchGlobalConfig.done = true;
@@ -1050,17 +1172,16 @@
             const desc = document.getElementById('desc-enter-system');
             if(isMaintenance) {
                 btn.classList.add('opacity-75', 'bg-gray-50', 'border-t-red-500', 'cursor-not-allowed');
-                btn.classList.remove('card-hover', 'border-t-[#1A4A9A]');
+                btn.classList.remove('card-hover', 'border-t-brand');
                 title.innerText = "SISTEM DISELENGGARA"; title.classList.add('text-red-600');
                 desc.innerText = "Sila kembali kemudian";
                 icon.className = "w-14 h-14 mb-4 rounded-full bg-red-100 flex items-center justify-center text-red-500";
             } else {
                 btn.classList.remove('opacity-75', 'bg-gray-50', 'border-t-red-500', 'cursor-not-allowed');
-                btn.classList.add('card-hover', 'border-t-[#1A4A9A]');
-                if(currentLang === 'ms') { title.innerText = "Masuk Sistem"; desc.innerText = "Aduan, Permohonan & Temujanji"; }
-                else { title.innerText = "Enter System"; desc.innerText = "Reports, Applications & Appointments"; }
+                btn.classList.add('card-hover', 'border-t-brand');
+                title.innerText = translations[currentLang].action_enter; desc.innerText = translations[currentLang].action_enter_desc;
                 title.classList.remove('text-red-600');
-                icon.className = "w-14 h-14 mb-4 rounded-full bg-blue-50 flex items-center justify-center text-[#1A4A9A] group-hover:bg-[#1A4A9A] group-hover:text-white transition duration-300";
+                icon.className = "w-14 h-14 mb-4 rounded-full bg-blue-50 flex items-center justify-center text-brand group-hover:bg-brand group-hover:text-white transition duration-300";
             }
         }
         function updateInfoUI() {
@@ -1135,7 +1256,7 @@
             const memos = JSON.parse(localStorage.getItem('app_memos'));
             const tickerContainer = document.getElementById('news-ticker-content');
             let contentHTML = "";
-            if(memos.length > 0) memos.forEach(m => { contentHTML += `<span class="ticker-item"><i class="fas fa-bullhorn text-yellow-300 mr-2"></i> ${escapeHtml(m)}</span>`; });
+            if(memos.length > 0) memos.forEach(m => { contentHTML += `<span class="ticker-item"><i class="fas fa-bullhorn text-yellow-300 accent-text mr-2"></i> ${escapeHtml(m)}</span>`; });
             else contentHTML = '<span class="ticker-item">Sistem Beroperasi Seperti Biasa.</span>';
             tickerContainer.innerHTML = contentHTML + contentHTML + contentHTML;
         }

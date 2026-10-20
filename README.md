@@ -4,6 +4,7 @@ Satu folder untuk bina sistem aduan / permohonan / temujanji yang sama bagi **kl
 setiap satu dengan emel, Google Sheet, Drive, Firebase dan laman web sendiri.
 
 - **Kandungan laman** (slide, pengumuman, waktu operasi, info kerajaan, suis tutup/buka borang, maintenance) → diurus melalui **Sveltia CMS** (fail dalam repo GitHub).
+- **Jenama, logo, warna, teks, hubungan & media sosial, dasar privasi (BM/EN), artikel SEO** → juga dalam CMS; medan kosong = nilai asal. Lihat `docs/05`.
 - **Borang, data, PDF, status, dashboard admin** → kekal di **Google Apps Script + Sheet + Drive** (pilihan A yang dipersetujui).
 - **Akaun rakyat** (daftar / log masuk / profil) → **Firebase**.
 
@@ -22,11 +23,13 @@ setiap satu dengan emel, Google Sheet, Drive, Firebase dan laman web sendiri.
 |---|---|---|
 | Slide, pengumuman, info pejabat, info kerajaan | `content/site.json` (repo GitHub) | Staf → Sveltia CMS `/cms/` |
 | Tutup/buka borang, maintenance | `content/site.json` | Staf → Sveltia CMS |
+| Nama, logo, warna, teks halaman, hubungan, privasi, SEO | `content/site.json` (kosong = `config.js`/teks asal) | Staf → Sveltia CMS |
+| Artikel | `content/artikel/*.md` → halaman statik oleh GitHub Actions | Staf → Sveltia CMS |
 | Aduan, permohonan, dll. | Google Sheet (6 tab) | Rakyat hantar; admin urus melalui `/admin/` |
 | PDF serahan, fail muat naik, laporan penyelesaian | Google Drive | Sistem jana automatik |
 | Kata laluan admin, sesi | Script Properties (hash + salt) | Menu ⚙️ dalam Google Sheet |
 | Akaun rakyat + profil | Firebase Auth + Firestore | Rakyat sendiri |
-| Nama sistem, logo, hubungan, URL Apps Script, Firebase | `site/config.js` | Anda (pembangun) |
+| Nilai asal nama/logo/hubungan, URL Apps Script, Firebase | `site/config.js` | Anda (pembangun) |
 | Emel admin, nama organisasi, URL laman | blok `CLIENT` dalam `appscript/Setup.gs` | Anda (pembangun) |
 
 ## Mula pantas — klien baharu
@@ -43,6 +46,7 @@ Kemudian ikut `clients/<slug>/CHECKLIST.md`, dalam urutan ini:
 3. Edit **`site/config.js`** — tampal URL `/exec` + `firebaseConfig`, letak logo klien.
 4. **`docs/03-CLOUDFLARE-DAN-SVELTIA.md`** — push `site/` ke repo GitHub klien → Cloudflare Pages (`pages.dev` → subdomain → domain utama) → Worker log masuk → `/cms/`.
 5. **`docs/04-ONBOARD-DAN-SERAHAN.md`** — ujian penerimaan, PDPA, penyelenggaraan, senarai serahan.
+6. **`docs/05-CMS-PENUH-DAN-SEO.md`** — (pilihan, disyorkan) aktifkan build GitHub Actions untuk artikel, sitemap, SEO & ikon PWA; senarai medan CMS jenama/warna/teks.
 
 Anggaran masa (agakan aku, bukan diukur): klien pertama ~1–1.5 jam termasuk belajar; klien seterusnya ~40 minit.
 Tanpa Mac/Linux: salin folder `site/`, `appscript/`, `firebase/`, `docs/` secara manual dan ganti setiap
@@ -99,9 +103,10 @@ karadi-template/
 | `node dev/appscript-mock-test.js` | 38 lulus | Logik `Code.gs`/`Setup.gs` terhadap **mock** Sheets/Drive/Properties. Model auto-parse sel (nombor/formula) adalah andaian aku tentang Google Sheets. |
 | `node dev/e2e-browser-test.js` | 19 lulus | Portal + admin dalam Chromium sebenar ↔ mock backend; diuji juga pada folder yang dijana `new-client.sh`. CDN (Tailwind, Font Awesome, Firebase SDK) disekat dalam sandbox, jadi **gaya visual & Firebase tidak diuji**. |
 | Mutation test pada ujian mock | 3 mutasi ditangkap | Sahkan ujian betul-betul gagal bila fix dibuang. |
+| `node dev/cms-features-test.js` | 38 + 17 lulus + semakan build | Tetapan CMS (warna, teks BM/EN, hubungan, privasi, logo) pada portal & admin, dan skrip build artikel/SEO/ikon (idempoten, XSS, gagal-selamat). Tailwind CDN diganti CSS yang dibina dengan konfigurasi sama. Lihat `docs/05`. |
 | `node dev/cms-load-test.js` | skrin log masuk dipaparkan | Sveltia **0.248.1 sebenar** (dari npm) memuat `cms/config.yml` template dan papar "Sign In with GitHub" + "Sign In Using Access Token". `config.yml` turut sah terhadap skema rasmi dalam pakej. Tidak termasuk log masuk sebenar atau suntingan. |
 
-**Belum diuji (perlu anda sahkan pada klien pertama):** Apps Script sebenar (kebenaran, menu, PDF converter, kuota), tingkah laku format sel `@` dalam Google Sheets sebenar, aliran Firebase (daftar/log masuk/reset) dan `firestore.rules`, **Cloudflare Pages** (tetapan build, custom domain, `_headers`), **Worker `sveltia-cms-auth`** dan log masuk/suntingan CMS sebenar ke GitHub, rupa visual di telefon.
+**Belum diuji (perlu anda sahkan pada klien pertama):** Apps Script sebenar (kebenaran, menu, PDF converter, kuota), tingkah laku format sel `@` dalam Google Sheets sebenar, aliran Firebase (daftar/log masuk/reset) dan `firestore.rules`, **Cloudflare Pages** (tetapan build, custom domain, `_headers`), **GitHub Actions sebenar** (workflow build), **Worker `sveltia-cms-auth`** dan log masuk/suntingan CMS sebenar ke GitHub, rupa visual di telefon.
 
 ## Had & keputusan reka bentuk yang perlu anda tahu
 
