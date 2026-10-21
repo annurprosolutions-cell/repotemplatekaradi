@@ -31,17 +31,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
 
-      - name: Pasang alat (marked, yaml)
-        run: npm install --no-save --no-package-lock --no-audit --no-fund --prefix .github/karadi-build marked@16.4.2 yaml@2.9.1
-
-      - name: Pasang sharp (pilihan — untuk ikon PNG)
-        run: npm install --no-save --no-package-lock --no-audit --no-fund --prefix .github/karadi-build sharp@0.35.4 || echo "sharp gagal dipasang — logo asal dipakai sebagai ikon"
+      # Satu arahan sahaja: npm membuang pakej dari pemasangan sebelumnya bila dipanggil semula.
+      # sharp pilihan — kalau gagal, pasang tanpanya (logo asal dipakai sebagai ikon).
+      - name: Pasang alat (marked, yaml, sharp)
+        run: |
+          F="--no-save --no-package-lock --no-audit --no-fund --prefix .github/karadi-build"
+          npm install $F marked@16.4.2 yaml@2.9.1 sharp@0.35.4 || {
+            echo "sharp gagal dipasang — teruskan tanpa ikon PNG"
+            npm install $F marked@16.4.2 yaml@2.9.1
+          }
 
       - name: Jana fail
         run: node .github/karadi-build/build.mjs
